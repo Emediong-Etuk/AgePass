@@ -29,7 +29,8 @@
     "devnet:down": "docker compose -f cli/standalone.yml down -v",
     "demo:local": "npm run demo -w @agepass/cli",
     "e2e:local": "npm run e2e -w @agepass/cli",
-    "app:dev": "npm run dev -w @agepass/app"
+    "app:dev": "npm run dev -w @agepass/app",
+    "e2e:ui": "cd cli && tsx ../app/e2e/ui-e2e.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.1",
@@ -41,7 +42,8 @@
     "tsx": "4.21.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.49.0",
-    "vitest": "4.0.15"
+    "vitest": "4.0.15",
+    "playwright": "1.56.1"
   },
   "overrides": {
     "smoldot": "npm:empty-npm-package@1.0.0",

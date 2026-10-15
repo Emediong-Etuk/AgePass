@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/reports/**',
       'contract/src/managed/**',
       'app/public/**',
+      'app/dist-e2e/**',
     ],
   },
   js.configs.recommended,

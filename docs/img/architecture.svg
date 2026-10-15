@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="Inter, Helvetica, Arial, sans-serif">
+  <!-- SPDX-License-Identifier: Apache-2.0 -->
+  <title>AgePass architecture</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#34e0a1"/></marker>
+    <style>
+      .box{fill:#12204a;stroke:#2a3d74;stroke-width:1.5}
+      .zone{fill:none;stroke:#34e0a1;stroke-width:1.5;stroke-dasharray:6 6}
+      .h{fill:#eef3ff;font-size:20px;font-weight:700}
+      .t{fill:#b8c4e3;font-size:15px}
+      .s{fill:#8794b8;font-size:13px}
+      .k{fill:#34e0a1;font-size:13px;font-weight:600}
+      .l{stroke:#34e0a1;stroke-width:2;fill:none}
+      .d{stroke:#34e0a1;stroke-width:2;fill:none;stroke-dasharray:7 6}
+    </style>
+  </defs>
+  <rect width="1200" height="640" fill="#0b1530"/>
+  <text x="40" y="48" class="h" font-size="26">AgePass architecture</text>
+  <text x="40" y="74" class="s">Private data stays in the dashed zone. Only disclosed values reach Midnight.</text>
+
+  <!-- Holder device -->
+  <rect x="40" y="110" width="360" height="300" rx="18" class="zone"/>
+  <text x="60" y="140" class="k">HOLDER DEVICE (private)</text>
+  <rect x="60" y="155" width="320" height="70" rx="12" class="box"/>
+  <text x="80" y="185" class="h">Wallet · web app / CLI</text>
+  <text x="80" y="208" class="t">witnesses: sk, credential, Merkle path</text>
+  <rect x="60" y="240" width="150" height="70" rx="12" class="box"/>
+  <text x="75" y="270" class="h">Vault</text>
+  <text x="75" y="292" class="s">encrypted sk + dates</text>
+  <rect x="230" y="240" width="150" height="70" rx="12" class="box"/>
+  <text x="245" y="270" class="h">Proof server</text>
+  <text x="245" y="292" class="s">localhost:6300</text>
+  <rect x="60" y="325" width="320" height="65" rx="12" class="box"/>
+  <text x="80" y="353" class="h">Lace</text>
+  <text x="80" y="375" class="s">DApp Connector 4.0.1 · pays DUST fee</text>
+
+  <!-- Issuer -->
+  <rect x="40" y="450" width="360" height="150" rx="18" class="box"/>
+  <text x="60" y="485" class="h">Issuer (bank · telco · KYC)</text>
+  <text x="60" y="512" class="t">checks ID off-chain, once</text>
+  <text x="60" y="538" class="t">issueCredential(birthDate, expiresOn,</text>
+  <text x="60" y="560" class="t">holderPk) as private args</text>
+  <text x="60" y="586" class="s">DEMO desk: typed date, never ID images</text>
+
+  <!-- Midnight -->
+  <rect x="470" y="110" width="400" height="490" rx="18" class="box"/>
+  <text x="490" y="145" class="h">Midnight · AgePass contract</text>
+  <text x="490" y="170" class="s">public ledger (everyone can read)</text>
+  <rect x="490" y="190" width="360" height="60" rx="10" fill="#0b1530" stroke="#2a3d74"/>
+  <text x="505" y="216" class="t">admin · sealed</text><text x="505" y="238" class="s">hash of deployer secret</text>
+  <rect x="490" y="262" width="360" height="60" rx="10" fill="#0b1530" stroke="#2a3d74"/>
+  <text x="505" y="288" class="t">issuers · Set</text><text x="505" y="310" class="s">approved issuer keys</text>
+  <rect x="490" y="334" width="360" height="72" rx="10" fill="#0b1530" stroke="#34e0a1"/>
+  <text x="505" y="360" class="t">credentials · HistoricMerkleTree&lt;16&gt;</text>
+  <text x="505" y="382" class="s">leaf hashes only · proofs hide which leaf</text>
+  <text x="505" y="399" class="s">credentialCount</text>
+  <rect x="490" y="418" width="360" height="92" rx="10" fill="#0b1530" stroke="#34e0a1"/>
+  <text x="505" y="444" class="t">verifications · Map&lt;challengeId, record&gt;</text>
+  <text x="505" y="466" class="s">siteId · nym · cutoffDate · checkedOn</text>
+  <text x="505" y="488" class="s">verificationCount</text>
+  <text x="490" y="540" class="s">circuits: addIssuer · removeIssuer ·</text>
+  <text x="490" y="560" class="s">issueCredential · proveAge</text>
+  <text x="490" y="580" class="s">pure: 6 hash circuits reused by TypeScript</text>
+
+  <!-- Site -->
+  <rect x="940" y="110" width="220" height="200" rx="18" class="box"/>
+  <text x="960" y="145" class="h">Site</text>
+  <text x="960" y="172" class="t">e.g. Corner Cellar</text>
+  <text x="960" y="200" class="s">1 create challenge</text>
+  <text x="960" y="222" class="s">2 hand off to wallet</text>
+  <text x="960" y="244" class="s">3 read record (indexer)</text>
+  <text x="960" y="266" class="s">4 check it matches</text>
+  <text x="960" y="288" class="s">no wallet, no PII</text>
+  <rect x="940" y="350" width="220" height="110" rx="18" class="box"/>
+  <text x="960" y="385" class="h">Indexer</text>
+  <text x="960" y="410" class="s">GraphQL v4</text>
+  <text x="960" y="432" class="s">public state only</text>
+
+  <!-- arrows -->
+  <path d="M400 525 H440 V370 H486" class="l" marker-end="url(#a)"/>
+  <text x="408" y="515" class="k">commit</text>
+  <path d="M380 357 H440 V464 H486" class="d" marker-end="url(#a)"/>
+  <text x="402" y="455" class="k">proof</text>
+  <path d="M940 175 H900 V60 H220 V150" class="l" marker-end="url(#a)"/>
+  <text x="560" y="52" class="k">challenge (URL fragment, never sent to a server)</text>
+  <path d="M870 464 H905 V405 H936" class="l" marker-end="url(#a)"/>
+  <path d="M1050 350 V314" class="l" marker-end="url(#a)"/>
+  <path d="M220 225 V236" class="l"/>
+</svg>

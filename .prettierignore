@@ -8,3 +8,4 @@ app/public/zkir
 package-lock.json
 docs/hackathon
 *.compact
+app/dist-e2e
