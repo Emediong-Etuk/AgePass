@@ -102,16 +102,32 @@ export async function startWallet(config: NetworkConfig, hexSeed: string): Promi
 const nightBalance = (s: { unshielded?: { balances: Record<string, bigint> } }) =>
   s.unshielded?.balances[ledger.nativeToken().raw] ?? 0n;
 
+type Progress = { appliedIndex: bigint; highestIndex: bigint };
+let lastTick = 0;
+
+/** Logs sync progress at most every 30 s, so long syncs on public networks are visible. */
+function progressTick(state: unknown, log: Log): void {
+  if (Date.now() - lastTick < 30_000) return;
+  lastTick = Date.now();
+  const st = state as Record<string, { state?: { progress?: Progress } } | undefined>;
+  const part = (k: string) => {
+    const p = st[k]?.state?.progress;
+    return p ? `${k} ${p.appliedIndex}/${p.highestIndex}` : `${k} ?`;
+  };
+  log.info(`sync: ${['shielded', 'unshielded', 'dust'].map(part).join(' · ')}`);
+}
+
 /** Address plus balances once synced. Used by `agepass wallet` to check faucet funding. */
 export async function walletSummary(
   ctx: WalletContext,
-  opts: { waitForNight?: boolean } = {},
+  opts: { waitForNight?: boolean; log?: Log } = {},
 ): Promise<{ address: string; night: bigint; dust: bigint }> {
   // With waitForNight, block until faucet funds arrive (useful right after requesting them).
   const s = await Rx.firstValueFrom(
-    ctx.wallet
-      .state()
-      .pipe(Rx.filter((x) => x.isSynced && (!opts.waitForNight || nightBalance(x) > 0n))),
+    ctx.wallet.state().pipe(
+      Rx.tap((x) => opts.log && progressTick(x, opts.log)),
+      Rx.filter((x) => x.isSynced && (!opts.waitForNight || nightBalance(x) > 0n)),
+    ),
   );
   return {
     address: ctx.unshieldedKeystore.getBech32Address().asString(),

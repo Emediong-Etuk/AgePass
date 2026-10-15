@@ -32,13 +32,17 @@ import {
   toYYYYMMDD,
   verifyReceipt,
 } from '@agepass/sdk';
-import { loadConfig } from './config.js';
+import { type CliConfig, loadConfig, saveDeployment } from './config.js';
 import { ensureDevnet } from './devnet.js';
 import { c, log, quietNetworkNoise, reportError } from './log.js';
-import { type Session, openSession, publicData } from './session.js';
+import { type Session, assertProofServer, openSession, publicData } from './session.js';
 
 quietNetworkNoise();
 const ASSERT = process.argv.includes('--assert');
+// `--network preview` runs the same story on a public network with the .env fee wallet.
+const netIdx = process.argv.indexOf('--network');
+const NETWORK = netIdx > 0 ? process.argv[netIdx + 1] : 'undeployed';
+let CONFIG: CliConfig;
 const failures: string[] = [];
 const check = (ok: boolean, what: string): void => {
   if (ok) {
@@ -69,12 +73,13 @@ async function timed<T>(label: string, f: () => Promise<T>): Promise<T> {
 }
 
 async function main(): Promise<void> {
-  const config = loadConfig('undeployed');
+  const config = (CONFIG = loadConfig(NETWORK));
   const today = new Date();
-  log.title('AgePass local demo');
+  log.title(`AgePass demo on ${config.networkId}`);
   log.info('Prove you are 18+ without showing your ID. Everything below is DEMO data.');
 
-  await ensureDevnet(config, log);
+  if (config.networkId === 'undeployed') await ensureDevnet(config, log);
+  else await assertProofServer(config);
   const session = await openSession(config, log, {
     storagePassword: demoPassphrase(),
     storeName: `agepass-demo-${Date.now()}`,
@@ -94,6 +99,11 @@ async function story(session: Session, today: Date): Promise<void> {
     session.deploy(createAgePassPrivateState(adminSk), 'admin'),
   );
   log.kv('contract', admin.contractAddress);
+  saveDeployment(CONFIG.networkId, {
+    contractAddress: admin.contractAddress,
+    deployedAt: new Date().toISOString(),
+  });
+  if (CONFIG.explorer) log.kv('explorer', CONFIG.explorer);
 
   // ── 2. Approve an issuer ───────────────────────────────────────────────────────────
   log.title('2. Admin approves an issuer (a KYC provider, bank or telco in real life)');
@@ -290,7 +300,7 @@ async function printPublicLedger(
   );
 
   // Scan the raw serialized contract state, exactly as the indexer serves it.
-  const raw = await publicData(loadConfig('undeployed')).queryContractState(admin.contractAddress);
+  const raw = await publicData(CONFIG).queryContractState(admin.contractAddress);
   const cs = new ContractState();
   if (raw !== null) cs.data = raw.data;
   const hex = toHex(cs.serialize());

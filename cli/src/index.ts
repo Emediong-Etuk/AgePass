@@ -87,7 +87,7 @@ program
       log.kv('network', config.networkId);
       log.kv('address', ctx.unshieldedKeystore.getBech32Address().asString());
       log.step('Syncing (can take a few minutes on a public network)…');
-      if (o.wait) await walletSummary(ctx, { waitForNight: true });
+      if (o.wait) await walletSummary(ctx, { waitForNight: true, log });
       if (o.prepare) await ensureFeesReady(ctx, log);
       const s = await walletSummary(ctx);
       log.kv('NIGHT', String(s.night));
