@@ -20,3 +20,5 @@ First submission to the Midnight Network Buildathon.
 - Web app (wallet, issuer desk, demo store, explorer) with Lace wiring and a browser E2E.
 - Docs: architecture, privacy and threat models, ADRs, business case, pitch assets.
 - CI: compile with Compact 0.31.1, license headers, lint, format, tests, app build.
+- Live deployment on Midnight Preview: `54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2`; the full scripted story passed there.
+- `agepass wallet [--wait] [--prepare]`; the scripted demo runs on Preview with `--network preview`.

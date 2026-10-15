@@ -21,20 +21,21 @@
 
 ### Test evidence
 
-| What                                  | Command                     | Result                               | Evidence                            |
-| ------------------------------------- | --------------------------- | ------------------------------------ | ----------------------------------- |
-| Contract compiles from a clean clone  | `npm ci && npm run compact` | 4 circuits, 8 keys, ~28 s            | `PROGRESS.md`                       |
-| Contract spec (simulator)             | `npm test`                  | 33/33 pass                           | CI, `contract/reports/junit.xml`    |
-| SDK                                   | `npm test`                  | 67/67 pass                           | CI, `sdk/reports/junit.xml`         |
-| Local end-to-end with assertions      | `npm run e2e:local`         | all checks pass, 6 real transactions | `docs/evidence/e2e-local.txt`       |
-| Every CLI command                     | `scripts/cli-smoke.sh`      | pass                                 | `docs/evidence/cli-smoke-local.txt` |
-| Browser end-to-end (Lace test double) | `npm run e2e:ui`            | see `docs/evidence/ui-e2e-local.txt` | `docs/img/*.png`                    |
+| What                                  | Command                                            | Result                               | Evidence                                           |
+| ------------------------------------- | -------------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
+| Contract compiles from a clean clone  | `npm ci && npm run compact`                        | 4 circuits, 8 keys, ~28 s            | `PROGRESS.md`                                      |
+| Contract spec (simulator)             | `npm test`                                         | 33/33 pass                           | CI, `contract/reports/junit.xml`                   |
+| SDK                                   | `npm test`                                         | 67/67 pass                           | CI, `sdk/reports/junit.xml`                        |
+| Local end-to-end with assertions      | `npm run e2e:local`                                | all checks pass, 6 real transactions | `docs/evidence/e2e-local.txt`                      |
+| Every CLI command                     | `scripts/cli-smoke.sh`                             | pass                                 | `docs/evidence/cli-smoke-local.txt`                |
+| Browser end-to-end (Lace test double) | `npm run e2e:ui`                                   | all checks pass                      | `docs/evidence/ui-e2e-local.txt`, `docs/img/*.png` |
+| **Full story on Preview**             | `npm run e2e -w @agepass/cli -- --network preview` | all checks pass, 6 real transactions | `docs/evidence/e2e-preview.txt`                    |
 
 ### Deployment
 
-| Network | Contract address                                     | Explorer                                |
-| ------- | ---------------------------------------------------- | --------------------------------------- |
-| Preview | _pending: needs Greg's funded Lace wallet (Phase 6)_ | <https://preview.midnightexplorer.com/> |
+| Network | Contract address                                                   | Explorer                                |
+| ------- | ------------------------------------------------------------------ | --------------------------------------- |
+| Preview | `54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2` | <https://preview.midnightexplorer.com/> |
 
 ## Wave 2 (planned)
 

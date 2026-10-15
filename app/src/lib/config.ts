@@ -21,11 +21,18 @@ export const PUBLIC_ENDPOINTS = networkConfig(NETWORK === 'undeployed' ? 'undepl
 
 const STORAGE_KEY = `agepass.contract.${NETWORK}`;
 
+/** The public AgePass deployment on Preview (Wave 1), used when nothing else is configured. */
+export const PREVIEW_DEPLOYMENT =
+  '54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2';
+
+const defaultAddress = (): string | undefined =>
+  env.VITE_AGEPASS_CONTRACT ?? (NETWORK === 'preview' ? PREVIEW_DEPLOYMENT : undefined);
+
 export function getContractAddress(): string | undefined {
   try {
-    return localStorage.getItem(STORAGE_KEY) ?? env.VITE_AGEPASS_CONTRACT ?? undefined;
+    return localStorage.getItem(STORAGE_KEY) ?? defaultAddress();
   } catch {
-    return env.VITE_AGEPASS_CONTRACT ?? undefined;
+    return defaultAddress();
   }
 }
 
