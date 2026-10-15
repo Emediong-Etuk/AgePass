@@ -1,0 +1,25 @@
+This is AgePass. Prove you're eighteen. Not who you are.
+
+Today, age checks mean uploading your passport to every website that asks. They only needed a yes.
+
+AgePass fixes that. Verify once with a trusted issuer, then prove your age anywhere, with a zero-knowledge proof.
+
+Sites learn one thing: yes. Plus a private nickname that only works on their site. Never your name. Never your birth date.
+
+First, your browser creates a secret key. It never leaves your device.
+
+Next, a trusted issuer, like a bank or a KYC provider, checks your ID once. On-chain, it records only a hidden commitment. No birth date. No identity.
+
+The credential itself stays with you.
+
+Now a store asks: are you eighteen? Your wallet shows exactly what the site will learn, and what it won't.
+
+Approve, and your device builds a zero-knowledge proof, checked by a smart contract on Midnight.
+
+Unlocked. The store got its yes, a site-only nickname, and two dates. Nothing else.
+
+A sixteen-year-old tries the same store. The check fails on their own device. No proof, nothing sent, nothing leaked.
+
+And this is everything that's public on-chain. Issuers, counts, verification records. No names. No birth dates.
+
+AgePass. Prove you're eighteen, not who you are. Built on Midnight, and fully open source.

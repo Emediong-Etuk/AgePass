@@ -10,9 +10,12 @@
 > Built on [Midnight](https://midnight.network) for the Midnight Network Buildathon (Wave 1).
 > Demo data only: AgePass never accepts real ID documents.
 
-| Pitch deck                                                              | Demo video                                                         | Contract (Preview)                           |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------- |
-| [`docs/pitch/deck.md`](docs/pitch/deck.md) · [PDF](docs/pitch/deck.pdf) | _link added after recording_ ([script](docs/pitch/demo-script.md)) | `54fc78d889…1069d2` ([details](#deployment)) |
+| Live demo                                                                       | Pitch deck                                                              | Contract (Preview)                           |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
+| **[emediong-etuk.github.io/AgePass](https://emediong-etuk.github.io/AgePass/)** | [`docs/pitch/deck.md`](docs/pitch/deck.md) · [PDF](docs/pitch/deck.pdf) | `54fc78d889…1069d2` ([details](#deployment)) |
+
+The live demo runs on Midnight Preview: browse the explorer with no wallet, or connect
+[Lace](https://www.lace.io/) (Preview, with tDUST) to try the wallet and the demo store.
 
 ---
 

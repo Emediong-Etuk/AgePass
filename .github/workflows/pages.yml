@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: Apache-2.0
+# Publishes the web app (pointed at the public AgePass deployment on Midnight Preview) to
+# GitHub Pages. Needs Settings → Pages → Source: "GitHub Actions" (one-time, by the repo owner).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Compact devtools 0.5.1 and toolchain 0.31.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.1/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/compact" update 0.31.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Compilation is deterministic, so these keys match the deployed contract's verifier keys.
+      - name: Compile contract (generates ZK keys)
+        run: npm run compact
+
+      - name: Build web app for Preview
+        env:
+          VITE_NETWORK_ID: preview
+        run: npm run build -w @agepass/app
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

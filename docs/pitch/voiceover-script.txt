@@ -1,0 +1,70 @@
+AGEPASS DEMO VIDEO: VOICEOVER SCRIPT
+====================================
+
+Video:  agepass-demo.mp4  (1:28, recorded live on Midnight Preview)
+Words:  about 215 spoken words, so read at a calm ~150 words per minute
+Tone:   warm, confident, unhurried. Leave a short breath between cues.
+
+Timings match the current cut. Each cue starts when its "ON SCREEN" scene appears;
+if you run a little long, finish the sentence and let the next scene breathe.
+Say "eighteen" and "sixteen" in full.
+
+
+[0:00 - 0:04]  ON SCREEN: Title card "AgePass"
+This is AgePass. Prove you're eighteen. Not who you are.
+
+[0:04 - 0:10]  ON SCREEN: "The problem" card
+Today, age checks mean uploading your passport to every website that asks.
+They only needed a yes.
+
+[0:10 - 0:17]  ON SCREEN: "The AgePass way" card
+AgePass fixes that. Verify once with a trusted issuer,
+then prove your age anywhere, with a zero-knowledge proof.
+
+[0:17 - 0:26]  ON SCREEN: Landing page scrolling
+Sites learn one thing: yes. Plus a private nickname that only works on their site.
+Never your name. Never your birth date.
+
+[0:26 - 0:30]  ON SCREEN: Wallet is created, holder key appears
+First, your browser creates a secret key. It never leaves your device.
+
+[0:30 - 0:43]  ON SCREEN: Issuer desk issues a credential
+Next, a trusted issuer, like a bank or a KYC provider, checks your ID once.
+On-chain, it records only a hidden commitment.
+No birth date. No identity.
+
+[0:43 - 0:46]  ON SCREEN: Credential imported into the wallet
+The credential itself stays with you.
+
+[0:46 - 0:54]  ON SCREEN: Corner Cellar store, then the age request in the wallet
+Now a store asks: are you eighteen?
+Your wallet shows exactly what the site will learn, and what it won't.
+
+[0:54 - 1:00]  ON SCREEN: Proof being generated and submitted
+Approve, and your device builds a zero-knowledge proof,
+checked by a smart contract on Midnight.
+
+[1:00 - 1:07]  ON SCREEN: Store unlocked, "What landed on-chain" panel
+Unlocked. The store got its yes, a site-only nickname, and two dates.
+Nothing else.
+
+[1:07 - 1:15]  ON SCREEN: A 16-year-old tries the store and is blocked
+A sixteen-year-old tries the same store.
+The check fails on their own device. No proof, nothing sent, nothing leaked.
+
+[1:15 - 1:21]  ON SCREEN: Public explorer
+And this is everything that's public on-chain.
+Issuers, counts, verification records. No names. No birth dates.
+
+[1:21 - 1:28]  ON SCREEN: End card
+AgePass. Prove you're eighteen, not who you are.
+Built on Midnight, and fully open source.
+
+
+RECORDING TIPS
+--------------
+- Record each cue as its own take; it makes lining them up in an editor easy.
+- Keep the music bed (if any) very low, so the voice sits on top.
+- The video has no audio track, so your voiceover is the only sound.
+- To combine a finished voiceover.m4a with the video without re-encoding the picture:
+    ffmpeg -i agepass-demo.mp4 -i voiceover.m4a -map 0:v -map 1:a -c:v copy -c:a aac agepass-demo-vo.mp4
