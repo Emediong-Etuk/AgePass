@@ -69,3 +69,42 @@ session; research used the official docs source (`midnightntwrk/midnight-docs`, 
 
 ---
 
+## ADR-001: Issuer computes the commitment *inside* `issueCredential` (Phase 1)
+
+**Context.** The reference design had the issuer compute the commitment off-chain and pass
+only the commitment to `issueCredential(commitment)`. Then the circuit cannot check that
+the `issuerPk` hashed into the credential is the issuer actually calling the circuit — an
+approved issuer could mint credentials attributed to another issuer, or with an expiry
+before the birth date.
+
+**Decision.** `issueCredential(birthDate, expiresOn, holderPk)` takes the attested values
+as **private circuit arguments** (circuit arguments are not public on Midnight unless
+disclosed) and computes the commitment in-circuit with `issuerPublicKey(localSecretKey())`.
+Only the commitment crosses `disclose()`, and only into a Merkle-tree insert, which does not
+reveal the leaf.
+
+**Consequence.** Stronger binding with no extra on-chain data. The birth date is processed by
+the issuer's own proof server (the issuer already knows it, invariant 1 still holds). The SDK
+still exposes `computeCommitment()` (via the exported pure circuit) so the issuer desk can
+preview the commitment and the holder can locate their leaf.
+
+## ADR-002: Commitment hash layout (Phase 1)
+
+**Context.** The reference design hashed `[persistentHash(cred), holderPk]`.
+
+**Decision.** Add a domain separator:
+`persistentHash<Vector<3, Bytes<32>>>([pad(32, "agepass:credential:"), persistentHash<CredentialData>(cred), holderPk])`.
+`persistentHash` over a struct is supported in language 0.23, so no manual field encoding is
+needed.
+
+**Consequence.** Every AgePass hash now has a distinct domain (`admin`, `issuer`, `holder`,
+`nym`, `credential`), so values from one role can never be mistaken for another.
+
+## ADR-003: Shared admin check and explicit `removeIssuer` membership (Phase 1)
+
+**Decision.** A non-exported `assertAdmin()` circuit holds the admin check
+(`"AgePass: only the admin can manage issuers"`), and `removeIssuer` asserts the issuer is on
+the list first (`"AgePass: issuer is not on the approved list"`) so a typo is reported instead
+of silently succeeding. `issueCredential` also asserts `birthDate < expiresOn`.
+
+**Consequence.** One message for both admin circuits (tests match on it).
