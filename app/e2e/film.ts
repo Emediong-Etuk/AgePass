@@ -13,7 +13,7 @@
 // funded AGEPASS_WALLET_SEED in .env.
 
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   type Browser,
@@ -100,9 +100,33 @@ class Take {
     this.flush();
     this.minGap = on ? 0.25 : 1 / 30;
   }
-  mark(name: string) {
+  /**
+   * Marks "the page as it is now". Paint can lag the DOM (the page may be busy, e.g. encrypting
+   * private state), so force a repaint and stamp the mark with the first frame painted after it.
+   */
+  async mark(name: string) {
+    const t0 = Date.now() / 1000;
+    await this.page
+      .evaluate(() => {
+        let el = document.getElementById('film-tick');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'film-tick';
+          el.setAttribute(
+            'style',
+            'position:fixed;right:0;bottom:0;width:2px;height:2px;pointer-events:none;z-index:2147483647',
+          );
+          document.body.appendChild(el);
+        }
+        el.style.opacity = el.style.opacity === '0.01' ? '0.02' : '0.01';
+        el.style.background = '#000';
+      })
+      .catch(() => {});
+    const painted = () => Math.max(this.frames.at(-1)?.ts ?? 0, this.pending?.ts ?? 0) >= t0;
+    for (let i = 0; i < 500 && !painted(); i++) await new Promise((r) => setTimeout(r, 20));
     this.flush();
-    this.marks.push({ name, t: Date.now() / 1000 });
+    const first = this.frames.find((f) => f.ts >= t0);
+    this.marks.push({ name, t: first?.ts ?? t0 });
   }
   at(name: string): number {
     const m = this.marks.find((x) => x.name === name);
@@ -356,7 +380,7 @@ async function main() {
     await p.goto(BASE);
     await p.getByText('Not who you are.').waitFor();
     await caption(p, 'AgePass', 'Prove you’re 18+ without showing your ID');
-    A.mark('landing_start');
+    await A.mark('landing_start');
     await hold(p, 2500);
     for (let i = 0; i < 5; i++) {
       await p.mouse.wheel(0, 230);
@@ -364,11 +388,11 @@ async function main() {
     }
     await caption(p, 'Sites learn “yes”. They never learn who you are.');
     await hold(p, 2500);
-    A.mark('landing_end');
+    await A.mark('landing_end');
 
     await nav(p, '/wallet');
     await caption(p, '1 · Your device creates a secret key', 'It never leaves this browser');
-    A.mark('wallet_start');
+    await A.mark('wallet_start');
     await createVault(p);
     await p.getByRole('button', { name: 'Generate my AgePass key' }).click();
     const holderPk = (await p.locator('.copy code').first().innerText()).trim();
@@ -378,7 +402,7 @@ async function main() {
       'You share only its public key with an issuer',
     );
     await hold(p, 2800);
-    A.mark('wallet_end');
+    await A.mark('wallet_end');
 
     await nav(p, '/issuer');
     await caption(
@@ -386,16 +410,16 @@ async function main() {
       '2 · A trusted issuer checks your ID once',
       'Demo issuer desk — in production a bank, telco or KYC provider',
     );
-    A.mark('issuer_start');
+    await A.mark('issuer_start');
     await p.getByRole('button', { name: 'Create issuer key' }).click();
     const issuerPk = (await p.locator('.copy code').first().innerText()).trim();
     await hold(p, 1500);
-    A.mark('issuer_key');
+    await A.mark('issuer_key');
     await admin.addIssuer(fromHex(issuerPk, 32)); // the admin approves this issuer on-chain
     await nav(p, '/');
     await nav(p, '/issuer');
     await p.getByText('approved', { exact: true }).waitFor({ timeout: 60_000 });
-    A.mark('approved');
+    await A.mark('approved');
     await connect(p);
     await typeSlow(p, 'Holder public key (from their wallet)', holderPk.slice(0, 24));
     await p.getByLabel('Holder public key (from their wallet)', { exact: true }).fill(holderPk);
@@ -407,18 +431,18 @@ async function main() {
     );
     await hold(p, 3500);
     await p.getByRole('button', { name: 'Issue credential' }).click();
-    A.mark('issue_wait_start');
+    await A.mark('issue_wait_start');
     A.sparse(true);
     await p.getByText('Receipt for the holder').waitFor({ timeout: 300_000 });
     A.sparse(false);
-    A.mark('issue_wait_end');
+    await A.mark('issue_wait_end');
     await caption(
       p,
       'Credential issued on Midnight',
       'The receipt goes back to the holder privately',
     );
     await hold(p, 3000);
-    A.mark('issuer_end');
+    await A.mark('issuer_end');
     const receipt = await p.locator('.copy code', { hasText: 'agepass-credential' }).innerText();
 
     await nav(p, '/wallet');
@@ -427,12 +451,12 @@ async function main() {
       '3 · The credential lives only on your device',
       'Checked against the on-chain registry before it is saved',
     );
-    A.mark('import_start');
+    await A.mark('import_start');
     await p.getByLabel('Credential receipt JSON').fill(receipt);
     await p.getByRole('button', { name: 'Import credential' }).click();
     await p.getByText('Your credential').waitFor({ timeout: 90_000 });
     await hold(p, 3000);
-    A.mark('import_end');
+    await A.mark('import_end');
 
     await nav(p, '/store');
     await caption(
@@ -440,7 +464,7 @@ async function main() {
       '4 · A shop asks: “Are you 18 or older?”',
       'Corner Cellar — a fictional age-gated store',
     );
-    A.mark('store_start');
+    await A.mark('store_start');
     await hold(p, 3000);
     await p.getByRole('button', { name: 'Verify with AgePass' }).click();
     await p.waitForURL(/#\/wallet\?request=/);
@@ -454,23 +478,23 @@ async function main() {
       'A zero-knowledge proof is generated on your device',
       'Real proof and transaction on Midnight Preview (sped up)',
     );
-    A.mark('prove_start');
+    await A.mark('prove_start');
     A.sparse(true);
     await p.getByRole('link', { name: /Return to/ }).waitFor({ timeout: 300_000 });
     A.sparse(false);
-    A.mark('prove_end');
+    await A.mark('prove_end');
     await hold(p, 1800);
     await p.getByRole('link', { name: /Return to/ }).click();
-    A.mark('return_click');
+    await A.mark('return_click');
     await p.getByText(/Welcome, nym 0x/).waitFor({ timeout: 180_000 });
     await caption(
       p,
       'Unlocked. The store learned only “yes” + a nickname',
       'This panel is the exact public record — no name, no birth date',
     );
-    A.mark('unlocked');
+    await A.mark('unlocked');
     await hold(p, 6500);
-    A.mark('store_end');
+    await A.mark('store_end');
 
     // Take B: a 16-year-old (prepared off-camera, then filmed at the store).
     const B = await newTake(browser, session, admin.contractAddress, 'minor');
@@ -494,7 +518,7 @@ async function main() {
     B.sparse(false);
     await nav(q, '/store');
     await caption(q, '5 · A 16-year-old tries the same store');
-    B.mark('minor_start');
+    await B.mark('minor_start');
     await hold(q, 2200);
     await q.getByRole('button', { name: 'Verify with AgePass' }).click();
     await q.waitForURL(/#\/wallet\?request=/);
@@ -506,7 +530,7 @@ async function main() {
       'The check fails before a proof even exists',
     );
     await hold(q, 5500);
-    B.mark('minor_end');
+    await B.mark('minor_end');
 
     await nav(p, '/explorer');
     await caption(
@@ -514,10 +538,10 @@ async function main() {
       '6 · Everything that is public on-chain',
       'Issuers, counts and verification records — no names, no birth dates',
     );
-    A.mark('explorer_start');
+    await A.mark('explorer_start');
     await p.getByRole('cell').first().waitFor({ timeout: 90_000 });
     await hold(p, 6000);
-    A.mark('explorer_end');
+    await A.mark('explorer_end');
 
     // Finalize recordings.
     for (const take of [A, B]) await take.stop();
@@ -550,14 +574,20 @@ type Seg =
 /** ffmpeg concat-demuxer list showing `take` from wall-clock `a` to `b`, sped up `k`×. */
 function frameList(take: Take, a: number, b: number, k: number): string {
   const fr = take.frames;
-  let i = fr.findLastIndex((f) => f.ts <= a);
-  if (i < 0) i = 0;
+  // Start on the first frame painted at or after `a`: the DOM can be ahead of the last
+  // paint at the moment a mark is taken (e.g. right after a navigation).
+  let i = fr.findIndex((f) => f.ts >= a && f.ts < b);
+  if (i < 0)
+    i = Math.max(
+      0,
+      fr.findLastIndex((f) => f.ts <= a),
+    );
   const lines: string[] = [];
   let last = '';
   for (let j = i; j < fr.length && (fr[j] as Frame).ts < b; j++) {
     const f = fr[j] as Frame;
     const next = fr[j + 1]?.ts ?? b;
-    const dur = (Math.min(next, b) - Math.max(f.ts, a)) / k;
+    const dur = (Math.min(next, b) - (j === i ? a : f.ts)) / k;
     if (dur <= 0) continue;
     lines.push(`file '${f.file}'`, `duration ${dur.toFixed(4)}`);
     last = f.file;
@@ -659,7 +689,22 @@ function run(args: string[]) {
   execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...args], { stdio: 'inherit' });
 }
 
-main().then(
+/** `AGEPASS_FILM_RECOMPOSE=1`: re-edit the last recording from media/film-raw, no filming. */
+function recompose() {
+  const d = JSON.parse(readFileSync(path.join(RAW, 'marks.json'), 'utf8')) as Record<
+    string,
+    { marks: Mark[]; frames: Frame[] }
+  >;
+  const take = (name: string) => {
+    const t = Object.create(Take.prototype) as Take;
+    Object.assign(t, { name, ...d[name] });
+    return t;
+  };
+  compose(take('main'), take('minor'));
+  return Promise.resolve();
+}
+
+(process.env.AGEPASS_FILM_RECOMPOSE === '1' ? recompose() : main()).then(
   () => process.exit(0),
   (e: unknown) => process.exit(reportError(e)),
 );
