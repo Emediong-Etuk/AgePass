@@ -1,0 +1,30 @@
+AgePass
+Copyright 2026 Emediong Etuk Gregory
+
+This product is licensed under the Apache License, Version 2.0
+(see the LICENSE file).
+
+Built on Midnight (https://midnight.network).
+
+AgePass is original work written for the Midnight Network Buildathon.
+No source code was copied from other projects. The author studied the
+following official Midnight resources (Apache-2.0, Copyright Midnight
+Foundation / Input Output) to learn current patterns, and credits them here:
+
+  * midnightntwrk/example-bboard
+      - workspace layout and the in-memory contract simulator test pattern
+  * midnightntwrk/example-zkloan
+      - exact pinned dependency set, witness/private-state pattern,
+        Midnight.js provider wiring, Lace (DApp Connector API) integration,
+        local standalone devnet composition, private-state password rules
+  * Midnight documentation (midnightntwrk/midnight-docs, docs.midnight.network)
+      - "Keeping data private": HistoricMerkleTree membership proofs and the
+        path.leaf binding check
+      - Security best practices: "Restricting a circuit to a group"
+      - Compact standard library and ledger ADT references
+      - Networks and environments, compatibility (support) matrix
+  * Election and private guest-list tutorials
+      - domain-separated persistentHash keys derived from a local secret
+
+Third-party npm dependencies are distributed under their own licenses;
+see each package in node_modules for details.

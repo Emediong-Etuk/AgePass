@@ -1,0 +1,34 @@
+
+> agepass@0.1.0 e2e:ui
+> cd cli && tsx ../app/e2e/ui-e2e.ts
+
+  Reusing the running local devnet
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+
+━━ Setup: deploy (Node admin) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  contract:        d8a8dd8126500d7e5b337bfe682e633d8fe5630797b41ab8055d00a7a7c32e54
+
+━━ Landing and explorer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━ Issuer desk (browser profile 1) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ issuer key shown
+
+━━ Holder wallet (browser profile 2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ holder key shown
+› Issuer issues a credential to the holder key (DEMO birth date)
+  issued from the browser in 26.1 s
+  ✓ receipt produced
+› Holder imports the receipt
+
+━━ Corner Cellar: verify with AgePass ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  proved from the browser in 29.5 s
+  ✓ store unlocked after on-chain verification
+
+━━ Underage holder is stopped on-device ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ underage attempt wrote nothing
+
+━━ Explorer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ UI e2e: all checks passed; screenshots in docs/img/
+exit=0

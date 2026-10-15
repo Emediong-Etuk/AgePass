@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: compile · lint · license · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Compact devtools 0.5.1 and toolchain 0.31.1
+        env:
+          # Lets `compact update` query GitHub releases without hitting anonymous rate limits.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.1/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/compact" update 0.31.1
+          "$HOME/.local/bin/compact" compile --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contract (generates ZK keys)
+        run: npm run compact
+
+      - name: License headers
+        run: npm run license:check
+
+      - name: Lint and typecheck
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Tests with coverage (simulator, no Docker or wallet)
+        run: npm run test:coverage
+
+      - name: Build web app
+        run: npm run build -w @agepass/app
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            contract/reports/
+            sdk/reports/
+            contract/coverage/
+            sdk/coverage/
+          if-no-files-found: ignore

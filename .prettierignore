@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+reports
+contract/src/managed
+app/public/keys
+app/public/zkir
+package-lock.json
+docs/hackathon
+*.compact
+app/dist-e2e

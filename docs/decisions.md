@@ -1,0 +1,206 @@
+# Architecture decision records
+
+Each record: **context → decision → consequence**. Newest at the bottom.
+
+---
+
+## ADR-000: Toolchain, versions, endpoints (Phase 0, 15 Oct 2026)
+
+**Context.** Compact and the Midnight SDKs change faster than any model's training data.
+The build prompt asked us to re-check the official compatibility matrix before installing
+anything. Preview, Preprod and Mainnet all run **ledger 8**; toolchains 0.34/0.35 and
+runtimes 0.19/0.20 target ledger 9 and cannot deploy there.
+
+**Decision.** Pin exactly to the matrix at
+<https://docs.midnight.network/relnotes/support-matrix> as read on 15 Oct 2026
+(identical for Preview, Preprod and Mainnet):
+
+| Component                                     | Pinned                | Notes                                                               |
+| --------------------------------------------- | --------------------- | ------------------------------------------------------------------- |
+| Node (Midnight)                               | 1.0.400               | `midnightntwrk/midnight-node:1.0.400` for the local devnet          |
+| Compact devtools (`compact`)                  | 0.5.1                 | installed from the `compact-v0.5.1` installer, not `latest` (0.5.3) |
+| Compact toolchain (`compact compile`)         | 0.31.1                | `compact compile --language-version` → `0.23.0`                     |
+| `@midnight-ntwrk/compact-runtime`             | 0.16.0 (exact)        |                                                                     |
+| Compact JS / Platform JS / on-chain runtime   | 2.5.1 / 2.2.4 / 3.0.0 | pulled transitively by Midnight.js 4.1.1                            |
+| Midnight.js (`@midnight-ntwrk/midnight-js-*`) | 4.1.1                 |                                                                     |
+| testkit-js                                    | 4.1.1                 |                                                                     |
+| `@midnight-ntwrk/dapp-connector-api`          | 4.0.1                 |                                                                     |
+| `@midnight-ntwrk/wallet-sdk`                  | 1.2.0 (exact)         |                                                                     |
+| `@midnight-ntwrk/ledger-v8`                   | 8.1.0                 | override, as in the official ZK Loan example                        |
+| Indexer                                       | 4.3.5 (Preview)       | `midnightntwrk/indexer-standalone:4.3.5`, API v4                    |
+| Proof server                                  | 8.1.3                 | `midnightntwrk/proof-server:8.1.3`                                  |
+
+The dependency set is copied from the current official `midnightntwrk/example-zkloan`
+(`package.json`, Midnight.js 4.1.1), never guessed. All `@midnight-ntwrk/*` versions are
+exact (no `^`).
+
+**Pragma.** `pragma language_version 0.23;` — accepted by compactc 0.31.1 (verified by
+compiling) and used by the official bulletin-board example.
+
+**Endpoints** (from _Networks and environments_, docs.midnight.network, read 15 Oct 2026):
+
+| Network                    | Node RPC                                                        | Indexer HTTP                                                       | Indexer WS                                                          |
+| -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `undeployed`               | `http://localhost:9944`                                         | `http://localhost:8088/api/v4/graphql`                             | `ws://localhost:8088/api/v4/graphql/ws`                             |
+| `preview` (default public) | `https://rpc.preview.midnight.network`                          | `https://indexer.preview.midnight.network/api/v4/graphql`          | `wss://indexer.preview.midnight.network/api/v4/graphql/ws`          |
+| `preprod`                  | `https://rpc.midnight-preprod.blockfrost.io?project_id=<token>` | `https://midnight-preprod.blockfrost.io/api/v0?project_id=<token>` | `wss://midnight-preprod.blockfrost.io/api/v0/ws?project_id=<token>` |
+
+The proof server is always local (`http://localhost:6300`). Midnight-hosted Preprod
+endpoints shut down on 9 Oct 2026, so Preprod needs `BLOCKFROST_PROJECT_ID`.
+
+**API names vs. the build prompt's reference design.** All names in the reference design
+exist in compactc 0.31.1 / language 0.23: `persistentHash<T>` (generic, accepts structs),
+`pad`, `merkleTreePathRoot<#n, T>`, `MerkleTreePath<#n, T>` (`leaf`, `path`),
+`HistoricMerkleTree.insert` / `checkRoot` (Compact) and `findPathForLeaf` / `pathForLeaf`
+(TypeScript only), `Set`, `Map`, `Counter`, `sealed ledger`. Generated TypeScript
+witness signature: `(context: WitnessContext<Ledger, PS>, ...args) => [PS, result]`.
+
+**Consequence.** Anyone with `compact` 0.5.x can reproduce the build with
+`compact update 0.31.1`. Do **not** run a bare `compact update`.
+
+**Environment note (build container only).** In the cloud build container, `compact update`
+could not reach the GitHub releases API (rate limited), so the 0.31.1 compiler zip was
+downloaded from the `compactc-v0.31.1` GitHub release and placed under
+`~/.compact/versions/0.31.1/x86_64-unknown-linux-musl/`. The resulting
+`compact compile --version` is `0.31.1`; on a normal machine `compact update 0.31.1` does
+the same thing. The Midnight Kapa MCP and Midnight Expert plugins were not loadable in that
+session; research used the official docs source (`midnightntwrk/midnight-docs`, commit of
+13 Oct 2026) and the official examples instead.
+
+---
+
+## ADR-001: Issuer computes the commitment _inside_ `issueCredential` (Phase 1)
+
+**Context.** The reference design had the issuer compute the commitment off-chain and pass
+only the commitment to `issueCredential(commitment)`. Then the circuit cannot check that
+the `issuerPk` hashed into the credential is the issuer actually calling the circuit — an
+approved issuer could mint credentials attributed to another issuer, or with an expiry
+before the birth date.
+
+**Decision.** `issueCredential(birthDate, expiresOn, holderPk)` takes the attested values
+as **private circuit arguments** (circuit arguments are not public on Midnight unless
+disclosed) and computes the commitment in-circuit with `issuerPublicKey(localSecretKey())`.
+Only the commitment crosses `disclose()`, and only into a Merkle-tree insert, which does not
+reveal the leaf.
+
+**Consequence.** Stronger binding with no extra on-chain data. The birth date is processed by
+the issuer's own proof server (the issuer already knows it, invariant 1 still holds). The SDK
+still exposes `computeCommitment()` (via the exported pure circuit) so the issuer desk can
+preview the commitment and the holder can locate their leaf.
+
+## ADR-002: Commitment hash layout (Phase 1)
+
+**Context.** The reference design hashed `[persistentHash(cred), holderPk]`.
+
+**Decision.** Add a domain separator:
+`persistentHash<Vector<3, Bytes<32>>>([pad(32, "agepass:credential:"), persistentHash<CredentialData>(cred), holderPk])`.
+`persistentHash` over a struct is supported in language 0.23, so no manual field encoding is
+needed.
+
+**Consequence.** Every AgePass hash now has a distinct domain (`admin`, `issuer`, `holder`,
+`nym`, `credential`), so values from one role can never be mistaken for another.
+
+## ADR-003: Shared admin check and explicit `removeIssuer` membership (Phase 1)
+
+**Decision.** A non-exported `assertAdmin()` circuit holds the admin check
+(`"AgePass: only the admin can manage issuers"`), and `removeIssuer` asserts the issuer is on
+the list first (`"AgePass: issuer is not on the approved list"`) so a typo is reported instead
+of silently succeeding. `issueCredential` also asserts `birthDate < expiresOn`.
+
+**Consequence.** One message for both admin circuits (tests match on it).
+
+## ADR-004: `siteIdFor` pure circuit (Phase 3)
+
+**Context.** The SDK needs `siteId = hash(domain)`. Invariant 8 forbids re-implementing any
+hash in TypeScript.
+
+**Decision.** Add `export pure circuit siteIdFor(domain: Bytes<128>): Bytes<32>`
+(`persistentHash<[Bytes<32>, Bytes<128>]>([pad(32, "agepass:site:"), domain])`). The SDK
+normalizes the domain (lower case, no scheme/path/port/trailing dot), UTF-8 encodes it and
+zero-pads to 128 bytes, then calls the generated circuit. Pure circuits produce no prover
+keys, so this adds nothing to deployment.
+
+**Consequence.** Domains longer than 128 bytes are rejected with a clear error. Any party can
+recompute a site's id, and the holder's wallet checks that a request's `siteId` really is the
+hash of the domain it shows the user.
+
+## ADR-005: Passphrase policy delegates to Midnight.js (Phase 3)
+
+**Context.** The level private-state provider rejects weak passwords. The prompt described the
+rules from memory; the installed source is authoritative.
+
+**Decision.** `sdk/src/password.ts` calls `validatePassword` exported by
+`@midnight-ntwrk/midnight-js-utils@4.1.1` (16+ characters, ≥3 character classes, no more
+than 3 identical characters in a row, no 4-character ascending/descending run,
+case-insensitive) and maps its `reason` codes to plain-language messages.
+
+**Consequence.** The app's passphrase check can never drift from what storage enforces.
+
+## ADR-006: Environment-neutral SDK, instrumented providers (Phase 3)
+
+**Decision.** `@agepass/sdk` contains no Node-only or Lace-only code. `AgePassAPI` takes a
+`MidnightProviders` set; the CLI builds it from the wallet SDK + level DB + file-system keys,
+the app from the DApp Connector + fetched keys. Each `AgePassAPI` instance acts for one
+participant (one private-state id), so a single CLI process can play admin, issuer and
+several holders against one deployment.
+
+**Consequence.** Proving-progress stages in the UI are reported by wrapping the proof,
+wallet and submission providers, not by duplicating Midnight.js internals.
+
+## ADR-007: Pin `@midnight-ntwrk/onchain-runtime-v3` to 3.0.0 (Phase 4)
+
+**Context.** The first devnet run deployed fine, then every call failed with
+`expected instance of StateValue`. `compact-runtime@0.16.0` depends on
+`onchain-runtime-v3@^3.0.0`, which floated to 3.1.2, while Midnight.js 4.1.1 pins 3.0.0. Two
+WASM runtimes were loaded and their objects failed each other's `instanceof` checks.
+
+**Decision.** Root `overrides` pin `onchain-runtime-v3` to **3.0.0**, the on-chain runtime
+version in the compatibility matrix, alongside `ledger-v8@8.1.0` and `compact-runtime@0.16.0`.
+
+**Consequence.** Exactly one runtime instance (`npm ls @midnight-ntwrk/onchain-runtime-v3`).
+Anyone copying this setup should pin it too.
+
+## ADR-008: One fee wallet, many AgePass identities in the CLI demo (Phase 4)
+
+**Context.** The scripted demo plays admin, issuer, Ada and Max.
+
+**Decision.** All roles pay DUST fees from the local devnet's genesis wallet, while each role
+has its own AgePass secret under its own private-state id. Fee payment and AgePass identity
+are separate by design.
+
+**Consequence.** Simple, reproducible local demo. In real use each holder pays from their own
+wallet; `docs/privacy-model.md` explains what the fee payment reveals.
+
+## ADR-009: Optional devnet compose override (Phase 4)
+
+**Context.** Behind a TLS-intercepting proxy, the proof-server container cannot download its
+public parameters (`UnknownIssuer`).
+
+**Decision.** `AGEPASS_DEVNET_COMPOSE_OVERRIDE=<file>` adds an extra compose file when the
+demo starts the devnet, e.g. to mount a corporate CA bundle. Not needed on a normal network.
+
+## ADR-010: Web app runtime choices (Phase 5)
+
+**Context.** The browser has no level DB, no Node globals, and Lace cannot be scripted in CI.
+
+**Decision.**
+
+- **Private state** lives in an on-device vault (PBKDF2-SHA256 600k → AES-GCM-256 in
+  `localStorage`), unlocked with a passphrase checked against the Midnight.js policy. During a
+  transaction it is loaded into an in-memory `PrivateStateProvider`, so nothing private is
+  stored unencrypted.
+- **Proof stages** come from wrapping the proof, wallet and submission providers.
+- **Underage/expired** requests are also pre-checked in the wallet for a gentle message before
+  any wallet prompt; the circuit remains the authority.
+- **Build:** `vite-plugin-top-level-await` is not used (its SWC step failed with Vite 6 and
+  ES2022 supports top-level await natively); `isomorphic-ws` is aliased to the native browser
+  `WebSocket` because its browser entry lacks the named export the indexer client imports.
+- **Testing:** `npm run e2e:ui` injects a DApp Connector 4.x **test double** whose
+  `balanceUnsealedTransaction`/`submitTransaction` are served by a real wallet-SDK wallet in
+  Node. Everything else is the production path, and every transaction is a real proof accepted
+  by a real local node.
+- **Hand-off:** the challenge travels in the URL fragment (`#/wallet?request=…`), which
+  browsers never send to servers.
+
+**Consequence.** The UI flow is verified end to end without a human; live Lace on Preview
+remains a manual check (Phase 6).

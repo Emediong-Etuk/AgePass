@@ -1,0 +1,45 @@
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ Deployed AgePass at 434d81a67b6ea37cefbf626f0506f2eee1f9fd03c36cf953e6ef7e32b9f25b99
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ Issuer key created. Ask the admin to run:
+  agepass admin add-issuer 31ae80a77935d13ced6ce74ad9335e25aa6657acf809143a895e51dc7cf0bc75
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ addIssuer confirmed in block 91 (tx 0x004d3b…7b1f05)
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ Holder "ada" created. Show this key to your issuer:
+  7d693f49836196026219fcba376c561effa607d9f2c54157b2439138f0ad5915
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ Credential issued in block 98.
+  Give this receipt to the holder privately (it contains the birth date):
+  /tmp/claude-0/smoke/receipt.json
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+✅ Credential from Demo KYC Ltd stored on this device.
+  expires:         2031-12-31
+✅ Request written to /tmp/claude-0/smoke/ch.json
+⚠  Not answered yet.
+› Syncing fee wallet
+  Fee wallet mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  NIGHT 250000000000000, DUST 1250000000000000000000000
+› Corner Cellar asks: are you 18 or older?
+  They will learn: yes, plus a private nickname just for this site.
+✅ Proof accepted in block 106.
+✅ Verified 18+. Nym 6da793e42928624078869e8fdf17d5983a8db723c2f8d4d4b10c989ad80e1825
+  admin:           d2f92170faae43cfc130a885812bb87b67b7155460c2564f8657f581412d7e06
+  issuers:         31ae80a77935d13ced6ce74ad9335e25aa6657acf809143a895e51dc7cf0bc75
+  credentials:     1
+  verifications:   1
+  0xefdb62…5e78a8 site 0x6b9f3e…43b746 nym 0x6da793…0e1825 cutoff 2008-10-15 checked 2026-10-15
+SMOKE-OK
+exit=0

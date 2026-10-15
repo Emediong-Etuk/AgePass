@@ -1,0 +1,177 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Emediong Etuk Gregory
+//
+// AgePass: prove you are over a given age without revealing who you are.
+//
+// Privacy model in one paragraph:
+//   * An approved issuer adds a *commitment* to (birthDate, expiresOn, issuer, holder key)
+//     as a leaf of a HistoricMerkleTree. Merkle-tree inserts do not reveal the leaf value.
+//   * A holder later proves, in zero knowledge, that they know the secret behind SOME leaf,
+//     that the birth date inside it is on or before the site's cutoff, and that it has not
+//     expired. Only the challenge, the site, a site-specific pseudonym and the two dates the
+//     site asked about are disclosed. Which leaf was used is never revealed.
+
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// ---------------------------------------------------------------- Types
+
+// Everything an issuer attests about a holder. Never disclosed on-chain.
+export struct CredentialData {
+  birthDate: Uint<32>;  // YYYYMMDD
+  expiresOn: Uint<32>;  // YYYYMMDD, last day the credential may be used
+  issuerPk:  Bytes<32>; // issuer that attested the birth date
+}
+
+// The public record a site reads after a successful proof.
+export struct Verification {
+  siteId:     Bytes<32>; // hash of the site's domain
+  nym:        Bytes<32>; // site-specific pseudonym, unlinkable across sites
+  cutoffDate: Uint<32>;  // birth date was proven to be <= this
+  checkedOn:  Uint<32>;  // date of the check, proven to be <= expiresOn
+}
+
+// ---------------------------------------------------------------- Public ledger
+
+// Derived from the deployer's secret; sealed so it can never be reassigned.
+export sealed ledger admin: Bytes<32>;
+// Public keys of issuers the admin has approved.
+export ledger issuers: Set<Bytes<32>>;
+// Credential commitments. Historic, so a path computed before later issuances still
+// verifies (checkRoot accepts past roots). Depth 16 = 65,536 credentials.
+export ledger credentials: HistoricMerkleTree<16, Bytes<32>>;
+export ledger credentialCount: Counter;
+// challengeId -> verification record. Keyed by challenge so each challenge is single use.
+export ledger verifications: Map<Bytes<32>, Verification>;
+export ledger verificationCount: Counter;
+
+// ---------------------------------------------------------------- Private inputs
+
+// The caller's 32-byte secret. Admin, issuer and holder each hold their own.
+witness localSecretKey(): Bytes<32>;
+// The holder's credential, kept only in local private state.
+witness storedCredential(): CredentialData;
+// Merkle path for the holder's commitment, looked up locally from the public tree.
+witness credentialPath(commitment: Bytes<32>): MerkleTreePath<16, Bytes<32>>;
+
+constructor() {
+  // disclose: the admin *public key* (a hash of the deployer's secret) becomes public.
+  // That is the point: anyone can see who governs the issuer list. The secret stays local.
+  admin = disclose(adminPublicKey(localSecretKey()));
+}
+
+// ---------------------------------------------------------------- Pure helpers
+// Exported so TypeScript calls these exact circuits instead of re-implementing hashes.
+// Each uses its own 32-byte domain separator so keys for different roles never collide.
+
+export pure circuit adminPublicKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "agepass:admin:"), sk]);
+}
+
+export pure circuit issuerPublicKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "agepass:issuer:"), sk]);
+}
+
+export pure circuit holderPublicKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "agepass:holder:"), sk]);
+}
+
+export pure circuit sitePseudonym(sk: Bytes<32>, siteId: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "agepass:nym:"), sk, siteId]);
+}
+
+// A site is identified by a hash of its normalized domain (UTF-8, zero-padded to 128 bytes),
+// so sites need no registration and anyone can recompute a site's id.
+export pure circuit siteIdFor(domain: Bytes<128>): Bytes<32> {
+  return persistentHash<[Bytes<32>, Bytes<128>]>([pad(32, "agepass:site:"), domain]);
+}
+
+export pure circuit credentialCommitment(cred: CredentialData, holderPk: Bytes<32>): Bytes<32> {
+  // holderPk is a hash of a 256-bit secret, so the commitment cannot be brute-forced
+  // from a guessed birth date the way a bare hash of a date could.
+  return persistentHash<Vector<3, Bytes<32>>>(
+    [pad(32, "agepass:credential:"), persistentHash<CredentialData>(cred), holderPk]);
+}
+
+// ---------------------------------------------------------------- Admin
+
+circuit assertAdmin(): [] {
+  assert(adminPublicKey(localSecretKey()) == admin, "AgePass: only the admin can manage issuers");
+}
+
+export circuit addIssuer(issuerPk: Bytes<32>): [] {
+  assertAdmin();
+  // disclose: the approved issuer key is meant to be public so anyone can audit the list.
+  issuers.insert(disclose(issuerPk));
+}
+
+export circuit removeIssuer(issuerPk: Bytes<32>): [] {
+  assertAdmin();
+  // disclose: removing a public list entry necessarily names it.
+  const pk = disclose(issuerPk);
+  assert(issuers.member(pk), "AgePass: issuer is not on the approved list");
+  issuers.remove(pk);
+}
+
+// ---------------------------------------------------------------- Issuer
+
+// The issuer passes the attested dates and the holder's public key as *private* circuit
+// arguments. The commitment is computed inside the circuit with the caller's own issuer
+// key, so an issuer cannot attribute a credential to a different issuer.
+export circuit issueCredential(birthDate: Uint<32>, expiresOn: Uint<32>, holderPk: Bytes<32>): [] {
+  const issuerPk = issuerPublicKey(localSecretKey());
+  // disclose: membership in the public issuer set reveals which approved issuer is issuing.
+  // Acceptable: issuers are public institutions; it says nothing about the holder.
+  assert(issuers.member(disclose(issuerPk)), "AgePass: caller is not an approved issuer");
+  assert(birthDate < expiresOn, "AgePass: credential must expire after the birth date");
+
+  const commitment = credentialCommitment(
+    CredentialData { birthDate: birthDate, expiresOn: expiresOn, issuerPk: issuerPk },
+    holderPk);
+  // disclose: required by the compiler because the value reaches a ledger operation, but a
+  // Merkle-tree insert does not reveal the leaf. Even someone guessing a birth date cannot
+  // test it: the commitment also hashes the high-entropy holder key.
+  credentials.insert(disclose(commitment));
+  credentialCount.increment(1);
+}
+
+// ---------------------------------------------------------------- Holder
+
+export circuit proveAge(
+  challengeId: Bytes<32>,
+  siteId: Bytes<32>,
+  cutoffDate: Uint<32>,
+  checkedOn: Uint<32>
+): [] {
+  // disclose: the challenge id is a random nonce chosen by the site; public by design.
+  const challenge = disclose(challengeId);
+  assert(!verifications.member(challenge), "AgePass: this challenge was already answered");
+
+  const sk = localSecretKey();
+  const cred = storedCredential();
+  const commitment = credentialCommitment(cred, holderPublicKey(sk));
+
+  // Bind the witness-supplied path to *this* holder's commitment. Without it, any valid
+  // path from the public tree would satisfy checkRoot (see Midnight security guide).
+  const path = credentialPath(commitment);
+  assert(path.leaf == commitment, "AgePass: credential path does not match your credential");
+  // disclose: only the Merkle *root* is revealed, and it is one of the tree's public roots.
+  // It says nothing about which leaf the path started from.
+  assert(credentials.checkRoot(disclose(merkleTreePathRoot<16, Bytes<32>>(path))),
+         "AgePass: credential was never issued");
+
+  assert(cred.birthDate <= cutoffDate, "AgePass: age requirement not met");
+  assert(checkedOn <= cred.expiresOn, "AgePass: credential has expired");
+
+  // disclose: exactly the fields the site needs. The birth date, expiry, issuer, holder
+  // key and commitment stay private; only the yes-answer (implied by success) and a
+  // pseudonym that is stable for this site but unlinkable across sites are published.
+  verifications.insert(challenge, Verification {
+    siteId:     disclose(siteId),
+    nym:        disclose(sitePseudonym(sk, siteId)),
+    cutoffDate: disclose(cutoffDate),
+    checkedOn:  disclose(checkedOn)
+  });
+  verificationCount.increment(1);
+}
