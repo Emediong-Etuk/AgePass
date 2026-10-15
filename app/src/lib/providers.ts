@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Emediong Etuk Gregory
 //
-// Browser Midnight.js providers: Lace balances and submits, the local proof server proves,
-// keys are fetched from this site, private state lives only in memory (see vault.ts).
+// Browser Midnight.js providers: Lace balances, submits and (when it supports it) proves;
+// otherwise a local proof server proves. Keys are fetched from this site, private state
+// lives only in memory (see vault.ts).
 // Each provider is wrapped to report which stage a transaction is in, so the UI can show
 // honest progress ("Generating zero-knowledge proof", "Approve in Lace", ...).
 
@@ -17,7 +18,13 @@ import {
   Transaction,
   type TransactionId,
 } from '@midnight-ntwrk/midnight-js-protocol/ledger';
-import type { PublicDataProvider, UnboundTransaction } from '@midnight-ntwrk/midnight-js-types';
+import {
+  type ProofProvider,
+  type PublicDataProvider,
+  type UnboundTransaction,
+  type ZKConfigProvider,
+  createProofProvider,
+} from '@midnight-ntwrk/midnight-js-types';
 import {
   AgePassAPI,
   type AgePassCircuitId,
@@ -43,19 +50,52 @@ export function publicDataProvider(): PublicDataProvider {
   ));
 }
 
-export function browserProviders(
-  api: ConnectedAPI,
-  config: { indexerUri: string; indexerWsUri: string; proverServerUri?: string | undefined },
+/**
+ * Proves through the wallet (DApp Connector `getProvingProvider`) when it offers that, so
+ * visitors need no local proof server; falls back to the local proof server if the wallet
+ * can't prove and one is reachable.
+ */
+async function proofProvider(
+  wallet: ConnectedWallet,
+  zkConfigProvider: ZKConfigProvider<AgePassCircuitId>,
+): Promise<ProofProvider> {
+  const local = httpClientProofProvider(wallet.proofServer, zkConfigProvider);
+  if (!wallet.walletProving) return local;
+  try {
+    const proving = await wallet.api.getProvingProvider({
+      getZKIR: (c) => zkConfigProvider.getZKIR(c as AgePassCircuitId),
+      getProverKey: (c) => zkConfigProvider.getProverKey(c as AgePassCircuitId),
+      getVerifierKey: (c) => zkConfigProvider.getVerifierKey(c as AgePassCircuitId),
+    });
+    const viaWallet = createProofProvider(proving);
+    return {
+      async proveTx(tx, cfg) {
+        try {
+          return await viaWallet.proveTx(tx, cfg);
+        } catch (e) {
+          if (wallet.proofServerOk) return local.proveTx(tx, cfg);
+          throw e;
+        }
+      },
+    };
+  } catch (e) {
+    if (wallet.proofServerOk) return local;
+    throw e;
+  }
+}
+
+export async function browserProviders(
+  wallet: ConnectedWallet,
   shieldedKeys: { shieldedCoinPublicKey: string; shieldedEncryptionPublicKey: string },
-  proofServer: string,
   onStage: (s: TxStage) => void,
-): AgePassProviders {
+): Promise<AgePassProviders> {
   setNetworkId(NETWORK);
+  const { api, config } = wallet;
   const zkConfigProvider = new FetchZkConfigProvider<AgePassCircuitId>(
     zkAssetsBase(),
     fetch.bind(window),
   );
-  const prover = httpClientProofProvider(proofServer, zkConfigProvider);
+  const prover = await proofProvider(wallet, zkConfigProvider);
   return {
     privateStateProvider: memoryPrivateStateProvider<AgePassPrivateState>(),
     zkConfigProvider,
@@ -97,6 +137,9 @@ export type ConnectedWallet = {
   api: ConnectedAPI;
   config: { indexerUri: string; indexerWsUri: string; proverServerUri?: string | undefined };
   proofServer: string;
+  proofServerOk: boolean;
+  /** The wallet can prove for us (DApp Connector `getProvingProvider`). */
+  walletProving: boolean;
 };
 
 /**
@@ -111,7 +154,7 @@ export async function joinAs(
   onStage: (s: TxStage) => void,
 ): Promise<AgePassAPI> {
   const keys = await wallet.api.getShieldedAddresses();
-  const providers = browserProviders(wallet.api, wallet.config, keys, wallet.proofServer, onStage);
+  const providers = await browserProviders(wallet, keys, onStage);
   return AgePassAPI.join(providers, makeCompiledAgePass('.'), contractAddress, role, state);
 }
 
@@ -121,6 +164,6 @@ export async function deployAs(
   onStage: (s: TxStage) => void,
 ): Promise<AgePassAPI> {
   const keys = await wallet.api.getShieldedAddresses();
-  const providers = browserProviders(wallet.api, wallet.config, keys, wallet.proofServer, onStage);
+  const providers = await browserProviders(wallet, keys, onStage);
   return AgePassAPI.deploy(providers, makeCompiledAgePass('.'), state, 'admin');
 }

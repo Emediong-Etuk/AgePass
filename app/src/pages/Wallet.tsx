@@ -23,6 +23,7 @@ import { Banner, Card, CopyField, ErrorNotice, Qr, TxProgress } from '../compone
 import { VaultGate } from '../components/VaultGate';
 import { WalletBar } from '../components/WalletBar';
 import { getContractAddress, setContractAddress } from '../lib/config';
+import { canProve } from '../lib/lace';
 import { joinAs, publicDataProvider, type TxStage } from '../lib/providers';
 import { href, type Route } from '../lib/router';
 import type { VaultCredential } from '../lib/vault';
@@ -371,8 +372,7 @@ function ApproveRequest({
               type="button"
               className="btn btn-primary"
               disabled={
-                wallet.kind !== 'connected' ||
-                (wallet.kind === 'connected' && !wallet.proofServerOk)
+                wallet.kind !== 'connected' || (wallet.kind === 'connected' && !canProve(wallet))
               }
               onClick={() => void approve()}
             >
