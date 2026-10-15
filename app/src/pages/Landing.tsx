@@ -127,9 +127,12 @@ export function Landing() {
           with a trusted issuer, then answer “are you 18?” anywhere with a zero-knowledge proof on
           Midnight.
         </p>
-        <div className="row">
-          <a className="btn btn-primary" href={href('/store')}>
-            Try the demo store
+        <div className="row-wrap">
+          <a className="btn btn-primary" href={href('/try')}>
+            Try it without a wallet
+          </a>
+          <a className="btn btn-ghost" href={href('/store')}>
+            Demo store (with Lace)
           </a>
           <a className="btn btn-ghost" href={href('/wallet')}>
             Open my wallet

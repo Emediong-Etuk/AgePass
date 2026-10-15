@@ -8,6 +8,7 @@ import { ExplorerPage } from './pages/Explorer';
 import { IssuerPage } from './pages/Issuer';
 import { Landing } from './pages/Landing';
 import { StorePage } from './pages/Store';
+import { TryPage } from './pages/Try';
 import { WalletPage } from './pages/Wallet';
 
 const NAV = [
@@ -15,6 +16,7 @@ const NAV = [
   { path: '/issuer', label: 'Issuer desk' },
   { path: '/store', label: 'Demo store' },
   { path: '/explorer', label: 'Explorer' },
+  { path: '/try', label: 'Try without a wallet' },
 ];
 
 export function App() {
@@ -28,6 +30,8 @@ export function App() {
       <StorePage />
     ) : route.path === '/explorer' ? (
       <ExplorerPage />
+    ) : route.path === '/try' ? (
+      <TryPage />
     ) : (
       <Landing />
     );
