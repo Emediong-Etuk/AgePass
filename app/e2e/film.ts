@@ -581,11 +581,12 @@ function frameList(take: Take, a: number, b: number, k: number): string {
   // Start on the first frame painted at or after `a`: the DOM can be ahead of the last
   // paint at the moment a mark is taken (e.g. right after a navigation).
   let i = fr.findIndex((f) => f.ts >= a && f.ts < b);
-  if (i < 0)
-    i = Math.max(
-      0,
-      fr.findLastIndex((f) => f.ts <= a),
-    );
+  if (i < 0) {
+    i = 0;
+    fr.forEach((f, j) => {
+      if (f.ts <= a) i = j;
+    });
+  }
   const lines: string[] = [];
   let last = '';
   for (let j = i; j < fr.length && (fr[j] as Frame).ts < b; j++) {
