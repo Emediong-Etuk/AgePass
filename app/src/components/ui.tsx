@@ -61,17 +61,28 @@ export function Banner({
   );
 }
 
+const STAGE_LABEL: Record<TxStage, string> = {
+  preparing: 'preparing the transaction',
+  proving: 'generating the zero-knowledge proof',
+  balancing: 'approving the fee in Lace',
+  submitting: 'submitting to the network',
+  confirmed: 'waiting for confirmation',
+};
+
 /** Plain-language error with an optional fix and a collapsed technical detail. */
-export function ErrorNotice({ error }: { error: unknown }) {
+export function ErrorNotice({ error, stage }: { error: unknown; stage?: TxStage | undefined }) {
   const f = describeError(error);
   return (
     <div className="banner banner-error" role="alert">
       <strong>{f.title}</strong>
+      {stage && <div>Failed while {STAGE_LABEL[stage]}.</div>}
       {f.fix && <div>{f.fix}</div>}
       {f.nothingShared && <div className="muted">Nothing was shared or sent to the network.</div>}
       <details>
         <summary>Details</summary>
-        <code className="mono small break">{f.detail}</code>
+        <code className="mono small break" style={{ whiteSpace: 'pre-wrap' }}>
+          {f.detail}
+        </code>
       </details>
     </div>
   );

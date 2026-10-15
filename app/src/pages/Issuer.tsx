@@ -37,24 +37,32 @@ function useTx() {
   const [stage, setStage] = useState<TxStage>();
   const [startedAt, setStartedAt] = useState(0);
   const [error, setError] = useState<unknown>();
+  const [failedAt, setFailedAt] = useState<TxStage>();
   const run = async <T,>(
     f: (onStage: (s: TxStage) => void) => Promise<T>,
   ): Promise<T | undefined> => {
     setError(undefined);
     setStartedAt(Date.now());
-    setStage('preparing');
+    let at: TxStage = 'preparing';
+    const onStage = (s: TxStage) => {
+      at = s;
+      setStage(s);
+    };
+    onStage('preparing');
     try {
-      const out = await f(setStage);
+      const out = await f(onStage);
       setStage('confirmed');
       return out;
     } catch (e) {
+      console.error(`AgePass: transaction failed while ${at}`, e);
       setStage(undefined);
+      setFailedAt(at);
       setError(e);
       return undefined;
     }
   };
   const busy = stage !== undefined && stage !== 'confirmed';
-  return { stage, startedAt, error, run, busy, reset: () => setStage(undefined) };
+  return { stage, startedAt, error, failedAt, run, busy, reset: () => setStage(undefined) };
 }
 
 export function IssuerPage() {
@@ -241,7 +249,7 @@ function AdminPanel(props: {
         </>
       )}
       {tx.stage && <TxProgress stage={tx.stage} startedAt={tx.startedAt} />}
-      {tx.error !== undefined && <ErrorNotice error={tx.error} />}
+      {tx.error !== undefined && <ErrorNotice error={tx.error} stage={tx.failedAt} />}
     </Card>
   );
 }
@@ -400,7 +408,7 @@ function IssueForm(props: {
         </button>
       </form>
       {tx.stage && <TxProgress stage={tx.stage} startedAt={tx.startedAt} />}
-      {tx.error !== undefined && <ErrorNotice error={tx.error} />}
+      {tx.error !== undefined && <ErrorNotice error={tx.error} stage={tx.failedAt} />}
       {receipt && (
         <div className="stack">
           <h3>Receipt for the holder</h3>

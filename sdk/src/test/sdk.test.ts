@@ -371,6 +371,14 @@ describe('friendly errors', () => {
     expect(describeError(declined).title).toBe('The request was declined in the wallet.');
     expect(describeError(new Error('')).detail).toBe('Error: (no message)');
   });
+
+  it('shows Effect tagged errors, their fields and the cause chain', () => {
+    const inner = Object.assign(new Error(''), { _tag: 'ProveError', circuit: 'deploy' });
+    const outer = Object.assign(new Error(''), { _tag: 'DeployTxFailed', cause: inner });
+    expect(describeError(outer).detail).toBe(
+      'DeployTxFailed: (no message)\n  caused by ProveError: circuit=deploy',
+    );
+  });
 });
 
 describe('network config', () => {
