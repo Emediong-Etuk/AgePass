@@ -102,6 +102,24 @@ export async function startWallet(config: NetworkConfig, hexSeed: string): Promi
 const nightBalance = (s: { unshielded?: { balances: Record<string, bigint> } }) =>
   s.unshielded?.balances[ledger.nativeToken().raw] ?? 0n;
 
+/** Address plus balances once synced. Used by `agepass wallet` to check faucet funding. */
+export async function walletSummary(
+  ctx: WalletContext,
+  opts: { waitForNight?: boolean } = {},
+): Promise<{ address: string; night: bigint; dust: bigint }> {
+  // With waitForNight, block until faucet funds arrive (useful right after requesting them).
+  const s = await Rx.firstValueFrom(
+    ctx.wallet
+      .state()
+      .pipe(Rx.filter((x) => x.isSynced && (!opts.waitForNight || nightBalance(x) > 0n))),
+  );
+  return {
+    address: ctx.unshieldedKeystore.getBech32Address().asString(),
+    night: nightBalance(s),
+    dust: s.dust?.balance(new Date()) ?? 0n,
+  };
+}
+
 /**
  * Waits for sync, then makes sure the wallet can pay fees: NIGHT must be registered for
  * DUST generation, and some DUST must have accrued. Submissions fail mid-sync or without DUST.

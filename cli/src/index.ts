@@ -30,6 +30,7 @@ import {
 import { contractAddressFor, loadConfig, saveDeployment } from './config.js';
 import { c, log, quietNetworkNoise, reportError } from './log.js';
 import { assertProofServer, openSession, publicData, readLedgerOrThrow } from './session.js';
+import { ensureFeesReady, startWallet, stopWallet, walletSummary } from './wallet.js';
 
 quietNetworkNoise();
 
@@ -72,6 +73,29 @@ const readJson = (fileOrJson: string): string =>
   fileOrJson.trim().startsWith('{') ? fileOrJson : readFileSync(fileOrJson, 'utf8');
 
 const holderId = (name: string) => `holder:${name}`;
+
+// ── wallet ───────────────────────────────────────────────────────────────────────────
+program
+  .command('wallet')
+  .description('Show the fee wallet address (for the faucet) and its NIGHT/DUST balances')
+  .option('--wait', 'keep syncing until NIGHT arrives (e.g. after using the faucet)')
+  .option('--prepare', 'register NIGHT for DUST generation and wait until DUST is available')
+  .action(async (o: { wait?: boolean; prepare?: boolean }) => {
+    const config = cfg();
+    const ctx = await startWallet(config, config.walletSeed);
+    try {
+      log.kv('network', config.networkId);
+      log.kv('address', ctx.unshieldedKeystore.getBech32Address().asString());
+      log.step('Syncing (can take a few minutes on a public network)…');
+      if (o.wait) await walletSummary(ctx, { waitForNight: true });
+      if (o.prepare) await ensureFeesReady(ctx, log);
+      const s = await walletSummary(ctx);
+      log.kv('NIGHT', String(s.night));
+      log.kv('DUST', String(s.dust));
+    } finally {
+      await stopWallet(ctx);
+    }
+  });
 
 // ── deploy ───────────────────────────────────────────────────────────────────────────
 program

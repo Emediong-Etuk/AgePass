@@ -142,10 +142,26 @@ async function withLaceDouble(ctx: BrowserContext, session: Session): Promise<vo
   })();`);
 }
 
-async function newProfile(browser: Browser, session: Session, contract: string): Promise<Page> {
+/**
+ * Recording mode (AGEPASS_RECORD_DIR=<dir>): every browser profile is screen-recorded at
+ * 1280×720 with slowed-down input and pauses on key screens, producing raw footage for the
+ * demo video. Screenshots in docs/img are left untouched in this mode.
+ */
+const RECORD_DIR = process.env.AGEPASS_RECORD_DIR;
+const recordings: { page: Page; name: string }[] = [];
+const pace = (page: Page, ms: number) => (RECORD_DIR ? page.waitForTimeout(ms) : Promise.resolve());
+
+async function newProfile(
+  browser: Browser,
+  session: Session,
+  contract: string,
+  name = 'profile',
+): Promise<Page> {
+  const size = RECORD_DIR ? { width: 1280, height: 720 } : { width: 1280, height: 860 };
   const ctx = await browser.newContext({
-    viewport: { width: 1280, height: 860 },
+    viewport: size,
     deviceScaleFactor: 1,
+    ...(RECORD_DIR ? { recordVideo: { dir: RECORD_DIR, size } } : {}),
   });
   await withLaceDouble(ctx, session);
   await ctx.addInitScript(
@@ -153,11 +169,13 @@ async function newProfile(browser: Browser, session: Session, contract: string):
   );
   const page = await ctx.newPage();
   page.on('pageerror', (e) => log.warn(`page error: ${e.message}`));
+  if (RECORD_DIR) recordings.push({ page, name });
   return page;
 }
 
 /** Full-page shot for the README, plus a 16:9 viewport crop for the slide deck. */
 const shot = async (page: Page, name: string) => {
+  if (RECORD_DIR) return;
   await page.screenshot({ path: path.join(IMG, `${name}.png`), fullPage: true });
   await page.screenshot({ path: path.join(IMG, 'deck', `${name}.png`) });
 };
@@ -209,16 +227,24 @@ async function main() {
     const contract = admin.contractAddress;
     log.kv('contract', contract);
     preview = await startPreview();
-    browser = await chromium.launch();
+    browser = await chromium.launch(RECORD_DIR ? { slowMo: 80 } : {});
 
     log.title('Landing and explorer');
-    const visitor = track(await newProfile(browser, session, contract));
+    const visitor = track(
+      await newProfile(browser, session, contract, 'clip-1-landing-and-explorer'),
+    );
     await visitor.goto(BASE);
     await visitor.getByText('Not who you are.').waitFor();
     await shot(visitor, '01-landing');
+    await pace(visitor, 3000);
+    for (let i = 0; i < 6; i++) {
+      await visitor.mouse.wheel(0, 250);
+      await pace(visitor, 900);
+    }
+    await pace(visitor, 2000);
 
     log.title('Issuer desk (browser profile 1)');
-    const issuer = track(await newProfile(browser, session, contract));
+    const issuer = track(await newProfile(browser, session, contract, 'clip-2-issuer-desk'));
     await issuer.goto(`${BASE}#/issuer`);
     await createVault(issuer);
     await issuer.getByRole('button', { name: 'Create issuer key' }).click();
@@ -232,10 +258,11 @@ async function main() {
     await connect(issuer);
 
     log.title('Holder wallet (browser profile 2)');
-    const holder = track(await newProfile(browser, session, contract));
+    const holder = track(await newProfile(browser, session, contract, 'clip-3-holder-and-store'));
     const holderPk = await holderKey(holder);
     check(/^[0-9a-f]{64}$/.test(holderPk), 'holder key shown');
     await shot(holder, '03-wallet-key');
+    await pace(holder, 3000);
 
     log.step('Issuer issues a credential to the holder key (DEMO birth date)');
     await issuer.getByLabel('Holder public key (from their wallet)').fill(holderPk);
@@ -245,6 +272,7 @@ async function main() {
       .first()
       .waitFor();
     await shot(issuer, '02-issuer-desk');
+    await pace(issuer, 3000);
     const t0 = Date.now();
     await issuer.getByRole('button', { name: 'Issue credential' }).click();
     await issuer.getByText('Receipt for the holder').waitFor({ timeout: 180_000 });
@@ -253,35 +281,41 @@ async function main() {
       .locator('.copy code', { hasText: 'agepass-credential' })
       .innerText();
     check(receipt.includes('"birthDate":"1998-04-12"'), 'receipt produced');
+    await pace(issuer, 3000);
 
     log.step('Holder imports the receipt');
     await holder.getByLabel('Credential receipt JSON').fill(receipt);
     await holder.getByRole('button', { name: 'Import credential' }).click();
     await holder.getByText('Your credential').waitFor({ timeout: 60_000 });
     await shot(holder, '04-wallet-credential');
+    await pace(holder, 3000);
 
     log.title('Corner Cellar: verify with AgePass');
     await holder.goto(`${BASE}#/store`);
     await shot(holder, '05-store-locked');
+    await pace(holder, 3000);
     await holder.getByRole('button', { name: 'Verify with AgePass' }).click();
     await holder.waitForURL(/#\/wallet\?request=/);
     await maybeUnlock(holder);
     await holder.getByText('wants to know').waitFor();
     await connect(holder);
     await shot(holder, '06-approve-request');
+    await pace(holder, 5000);
     const t1 = Date.now();
     await holder.getByRole('button', { name: 'Approve' }).click();
     await holder.getByText('Generating zero-knowledge proof').waitFor();
     await holder.getByRole('link', { name: /Return to/ }).waitFor({ timeout: 240_000 });
     log.info(`proved from the browser in ${((Date.now() - t1) / 1000).toFixed(1)} s`);
     await shot(holder, '07-proof-confirmed');
+    await pace(holder, 2500);
     await holder.getByRole('link', { name: /Return to/ }).click();
     await holder.getByText(/Welcome, nym 0x/).waitFor({ timeout: 90_000 });
     check(true, 'store unlocked after on-chain verification');
     await shot(holder, '08-store-unlocked');
+    await pace(holder, 6000);
 
     log.title('Underage holder is stopped on-device');
-    const minor = track(await newProfile(browser, session, contract));
+    const minor = track(await newProfile(browser, session, contract, 'clip-4-underage-blocked'));
     const minorPk = await holderKey(minor);
     await issuer.goto(`${BASE}#/issuer`);
     await issuer.getByLabel('Holder public key (from their wallet)').fill(minorPk);
@@ -300,6 +334,7 @@ async function main() {
     await maybeUnlock(minor);
     await minor.getByText('couldn’t confirm this request').waitFor();
     await shot(minor, '09-underage-blocked');
+    await pace(minor, 5000);
     check(
       (await admin.readLedger())?.verificationCount === before,
       'underage attempt wrote nothing',
@@ -310,6 +345,7 @@ async function main() {
     await visitor.getByText('Verification records').waitFor();
     await visitor.getByRole('cell').first().waitFor({ timeout: 30_000 });
     await shot(visitor, '10-explorer');
+    await pace(visitor, 5000);
 
     // Mobile layout check for the approve screen.
     await holder.setViewportSize({ width: 390, height: 844 });
@@ -326,6 +362,18 @@ async function main() {
     );
     throw e;
   } finally {
+    // Closing each context finalizes its video; then give it a readable name.
+    for (const r of recordings) {
+      await r.page.context().close();
+      await r.page
+        .video()
+        ?.saveAs(path.join(RECORD_DIR ?? '', `${r.name}.webm`))
+        .catch(() => undefined);
+      await r.page
+        .video()
+        ?.delete()
+        .catch(() => undefined);
+    }
     await browser?.close();
     preview?.kill();
     await session.close();

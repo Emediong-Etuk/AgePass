@@ -4,7 +4,7 @@
 // CLI configuration from .env (gitignored) with safe local defaults. Nothing secret has a
 // default except the local devnet's well-known genesis seed, which only works on `undeployed`.
 
-import 'dotenv/config';
+import { config as loadDotenv } from 'dotenv';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +18,9 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(here, '..', '..');
+
+// npm workspace scripts run inside cli/, so load the repo-root .env explicitly.
+loadDotenv({ path: path.join(REPO_ROOT, '.env'), quiet: true });
 
 /** Compiler output with keys/ and zkir/, produced by `npm run compact`. */
 export const ZK_ASSETS_PATH = path.join(REPO_ROOT, 'contract', 'src', 'managed', 'agepass');
@@ -58,7 +61,9 @@ export function loadConfig(overrideNetwork?: string): CliConfig {
   }
   return {
     ...net,
-    walletSeed: seed || LOCAL_GENESIS_SEED,
+    // The local devnet always uses its pre-funded genesis wallet, even if .env holds a
+    // seed for a public network.
+    walletSeed: network === 'undeployed' ? LOCAL_GENESIS_SEED : (seed as string),
     storagePassword: process.env.AGEPASS_PRIVATE_STATE_PASSWORD,
   };
 }

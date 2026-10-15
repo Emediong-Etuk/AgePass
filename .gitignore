@@ -35,3 +35,6 @@ npm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Raw demo-video footage (large; shared outside git)
+media/
