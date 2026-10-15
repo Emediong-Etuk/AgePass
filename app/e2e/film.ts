@@ -466,10 +466,12 @@ async function main() {
     );
     await A.mark('store_start');
     await hold(p, 3000);
+    await A.mark('verify_click');
     await p.getByRole('button', { name: 'Verify with AgePass' }).click();
     await p.waitForURL(/#\/wallet\?request=/);
     await unlockIfAsked(p);
     await p.getByText('wants to know').waitFor();
+    await A.mark('request_shown');
     await caption(p, 'You see exactly what the site will learn', '…and what it will never learn');
     await hold(p, 5000);
     await p.getByRole('button', { name: 'Approve' }).click();
@@ -520,10 +522,12 @@ async function main() {
     await caption(q, '5 · A 16-year-old tries the same store');
     await B.mark('minor_start');
     await hold(q, 2200);
+    await B.mark('minor_click');
     await q.getByRole('button', { name: 'Verify with AgePass' }).click();
     await q.waitForURL(/#\/wallet\?request=/);
     await unlockIfAsked(q);
     await q.getByText('couldn’t confirm this request').waitFor();
+    await B.mark('minor_blocked');
     await caption(
       q,
       'Blocked on the device. Nothing is shared, nothing is sent.',
@@ -538,8 +542,8 @@ async function main() {
       '6 · Everything that is public on-chain',
       'Issuers, counts and verification records — no names, no birth dates',
     );
-    await A.mark('explorer_start');
     await p.getByRole('cell').first().waitFor({ timeout: 90_000 });
+    await A.mark('explorer_start');
     await hold(p, 6000);
     await A.mark('explorer_end');
 
@@ -609,11 +613,13 @@ function compose(A: Take, B: Take) {
     { take: A, from: A.at('issue_wait_start'), to: A.at('issue_wait_end'), speed: 10 },
     { take: A, from: A.at('issue_wait_end'), to: A.at('issuer_end') },
     { take: A, from: A.at('import_start'), to: A.at('import_end') },
-    { take: A, from: A.at('store_start'), to: A.at('prove_start') },
+    { take: A, from: A.at('store_start'), to: A.at('verify_click') },
+    { take: A, from: A.at('request_shown'), to: A.at('prove_start') },
     { take: A, from: A.at('prove_start'), to: A.at('prove_end'), speed: 8 },
     { take: A, from: A.at('prove_end'), to: A.at('return_click') },
     { take: A, from: A.at('unlocked'), to: A.at('store_end') },
-    { take: B, from: B.at('minor_start'), to: B.at('minor_end') },
+    { take: B, from: B.at('minor_start'), to: B.at('minor_click') },
+    { take: B, from: B.at('minor_blocked'), to: B.at('minor_end') },
     { take: A, from: A.at('explorer_start'), to: A.at('explorer_end') },
     { card: 'end', secs: 7 },
   ];
