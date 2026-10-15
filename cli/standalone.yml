@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+# Local Midnight network for AgePass development: node + indexer + proof server.
+# Images are pinned to the official compatibility matrix (Preview, 15 Oct 2026).
+# Usage: npm run devnet:up / npm run devnet:down
+name: agepass-devnet
+
+services:
+  proof-server:
+    container_name: agepass-proof-server
+    image: midnightntwrk/proof-server:8.1.3
+    command: ['midnight-proof-server -v']
+    ports:
+      - '127.0.0.1:6300:6300'
+    environment:
+      RUST_BACKTRACE: 'full'
+    # The 8.1.x image is distroless (no shell or curl), so no in-container healthcheck.
+    # The CLI waits for GET http://127.0.0.1:6300/version instead.
+
+  node:
+    container_name: agepass-node
+    image: midnightntwrk/midnight-node:1.0.400
+    ports:
+      - '127.0.0.1:9944:9944'
+    environment:
+      CFG_PRESET: 'dev'
+      SIDECHAIN_BLOCK_BENEFICIARY: '04bcf7ad3be7a5c790460be82a713af570f22e0f801f6659ab8e84a52be6969e'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9944/health']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  indexer:
+    container_name: agepass-indexer
+    image: midnightntwrk/indexer-standalone:4.3.5
+    # On a cold start the SPO sub-indexer exits if the node has not produced its first block
+    # yet; restarting once the node ticks over succeeds (fix from the official ZK Loan example).
+    restart: 'on-failure:10'
+    env_file: standalone.env
+    ports:
+      - '127.0.0.1:8088:8088'
+    environment:
+      RUST_LOG: 'indexer=info,chain_indexer=info,indexer_api=info,wallet_indexer=info,indexer_common=info,fastrace_opentelemetry=off,info'
+      APP__APPLICATION__NETWORK_ID: 'undeployed'
+    healthcheck:
+      test: ['CMD-SHELL', 'cat /var/run/indexer-standalone/running']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      node:
+        condition: service_healthy

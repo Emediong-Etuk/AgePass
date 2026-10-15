@@ -10,7 +10,7 @@ Status legend: ✅ done · 🟡 in progress · ⏸ waiting on Greg · ⬜ not st
 | 1. Contract | ✅ | `contract/src/agepass.compact`; clean clone → `npm ci && npm run compact` builds 4 circuits / 8 keys (~28 s) |
 | 2. Simulator and tests | ✅ | `npm test`: 33 contract spec tests + 17 date tests pass |
 | 3. SDK | ✅ | `sdk/src/*`; 67 SDK tests, 99% line / 94% branch coverage of helpers |
-| 4. CLI and local end-to-end | ⬜ | |
+| 4. CLI and local end-to-end | ✅ | `npm run e2e:local` all checks pass (`docs/evidence/e2e-local.txt`); every CLI subcommand smoke-tested (`docs/evidence/cli-smoke-local.txt`) |
 | 5. Web app | ⬜ | |
 | 6. Preview deployment | ⬜ | needs Greg's funded Lace wallet |
 | 7. Docs, CI, licensing, pitch | ⬜ | |

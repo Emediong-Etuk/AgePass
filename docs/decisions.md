@@ -146,3 +146,35 @@ several holders against one deployment.
 
 **Consequence.** Proving-progress stages in the UI are reported by wrapping the proof,
 wallet and submission providers, not by duplicating Midnight.js internals.
+
+## ADR-007: Pin `@midnight-ntwrk/onchain-runtime-v3` to 3.0.0 (Phase 4)
+
+**Context.** The first devnet run deployed fine, then every call failed with
+`expected instance of StateValue`. `compact-runtime@0.16.0` depends on
+`onchain-runtime-v3@^3.0.0`, which floated to 3.1.2, while Midnight.js 4.1.1 pins 3.0.0. Two
+WASM runtimes were loaded and their objects failed each other's `instanceof` checks.
+
+**Decision.** Root `overrides` pin `onchain-runtime-v3` to **3.0.0**, the on-chain runtime
+version in the compatibility matrix, alongside `ledger-v8@8.1.0` and `compact-runtime@0.16.0`.
+
+**Consequence.** Exactly one runtime instance (`npm ls @midnight-ntwrk/onchain-runtime-v3`).
+Anyone copying this setup should pin it too.
+
+## ADR-008: One fee wallet, many AgePass identities in the CLI demo (Phase 4)
+
+**Context.** The scripted demo plays admin, issuer, Ada and Max.
+
+**Decision.** All roles pay DUST fees from the local devnet's genesis wallet, while each role
+has its own AgePass secret under its own private-state id. Fee payment and AgePass identity
+are separate by design.
+
+**Consequence.** Simple, reproducible local demo. In real use each holder pays from their own
+wallet; `docs/privacy-model.md` explains what the fee payment reveals.
+
+## ADR-009: Optional devnet compose override (Phase 4)
+
+**Context.** Behind a TLS-intercepting proxy, the proof-server container cannot download its
+public parameters (`UnknownIssuer`).
+
+**Decision.** `AGEPASS_DEVNET_COMPOSE_OVERRIDE=<file>` adds an extra compose file when the
+demo starts the devnet, e.g. to mount a corporate CA bundle. Not needed on a normal network.
