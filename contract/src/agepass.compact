@@ -81,6 +81,12 @@ export pure circuit sitePseudonym(sk: Bytes<32>, siteId: Bytes<32>): Bytes<32> {
   return persistentHash<Vector<3, Bytes<32>>>([pad(32, "agepass:nym:"), sk, siteId]);
 }
 
+// A site is identified by a hash of its normalized domain (UTF-8, zero-padded to 128 bytes),
+// so sites need no registration and anyone can recompute a site's id.
+export pure circuit siteIdFor(domain: Bytes<128>): Bytes<32> {
+  return persistentHash<[Bytes<32>, Bytes<128>]>([pad(32, "agepass:site:"), domain]);
+}
+
 export pure circuit credentialCommitment(cred: CredentialData, holderPk: Bytes<32>): Bytes<32> {
   // holderPk is a hash of a 256-bit secret, so the commitment cannot be brute-forced
   // from a guessed birth date the way a bare hash of a date could.

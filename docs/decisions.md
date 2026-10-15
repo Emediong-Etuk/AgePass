@@ -108,3 +108,41 @@ the list first (`"AgePass: issuer is not on the approved list"`) so a typo is re
 of silently succeeding. `issueCredential` also asserts `birthDate < expiresOn`.
 
 **Consequence.** One message for both admin circuits (tests match on it).
+
+## ADR-004: `siteIdFor` pure circuit (Phase 3)
+
+**Context.** The SDK needs `siteId = hash(domain)`. Invariant 8 forbids re-implementing any
+hash in TypeScript.
+
+**Decision.** Add `export pure circuit siteIdFor(domain: Bytes<128>): Bytes<32>`
+(`persistentHash<[Bytes<32>, Bytes<128>]>([pad(32, "agepass:site:"), domain])`). The SDK
+normalizes the domain (lower case, no scheme/path/port/trailing dot), UTF-8 encodes it and
+zero-pads to 128 bytes, then calls the generated circuit. Pure circuits produce no prover
+keys, so this adds nothing to deployment.
+
+**Consequence.** Domains longer than 128 bytes are rejected with a clear error. Any party can
+recompute a site's id, and the holder's wallet checks that a request's `siteId` really is the
+hash of the domain it shows the user.
+
+## ADR-005: Passphrase policy delegates to Midnight.js (Phase 3)
+
+**Context.** The level private-state provider rejects weak passwords. The prompt described the
+rules from memory; the installed source is authoritative.
+
+**Decision.** `sdk/src/password.ts` calls `validatePassword` exported by
+`@midnight-ntwrk/midnight-js-utils@4.1.1` (16+ characters, ≥3 character classes, no more
+than 3 identical characters in a row, no 4-character ascending/descending run,
+case-insensitive) and maps its `reason` codes to plain-language messages.
+
+**Consequence.** The app's passphrase check can never drift from what storage enforces.
+
+## ADR-006: Environment-neutral SDK, instrumented providers (Phase 3)
+
+**Decision.** `@agepass/sdk` contains no Node-only or Lace-only code. `AgePassAPI` takes a
+`MidnightProviders` set; the CLI builds it from the wallet SDK + level DB + file-system keys,
+the app from the DApp Connector + fetched keys. Each `AgePassAPI` instance acts for one
+participant (one private-state id), so a single CLI process can play admin, issuer and
+several holders against one deployment.
+
+**Consequence.** Proving-progress stages in the UI are reported by wrapping the proof,
+wallet and submission providers, not by duplicating Midnight.js internals.
