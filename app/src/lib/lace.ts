@@ -20,7 +20,8 @@ export type WalletStatus =
       api: ConnectedAPI;
       config: Configuration;
       walletName: string;
-      dust: bigint;
+      /** Spendable DUST, or undefined when the wallet could not report it. */
+      dust: bigint | undefined;
       proofServer: string;
       proofServerOk: boolean;
       /** Lace proves for us, so no local proof server is needed. */
@@ -95,8 +96,8 @@ export async function connectLace(networkId: string): Promise<WalletStatus> {
   const [dust, proofServerOk] = await Promise.all([
     api
       .getDustBalance()
-      .then((d) => d.balance)
-      .catch(() => 0n),
+      .then((d): bigint | undefined => d.balance)
+      .catch(() => undefined),
     proofServerReachable(proofServer),
   ]);
   return {

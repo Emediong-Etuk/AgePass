@@ -11,11 +11,14 @@
   verification records, sealed admin key, six exported pure hash circuits.
 - **Simulator + 33 spec tests** covering every rule, attack and the privacy regression.
 - **SDK**: typed `AgePassAPI`, challenges, site-side verifier, receipts, dates, friendly errors.
-  67 tests, ~99% line coverage of the helpers.
+  69 tests, ~99% line coverage of the helpers.
 - **CLI** with a command per role, encrypted private state, local devnet pinned to the
   compatibility matrix, `demo:local` and `e2e:local`.
 - **Web app**: holder wallet, demo issuer desk, Corner Cellar demo store, public explorer;
-  Lace via DApp Connector 4.0.1; browser E2E against the local devnet.
+  Lace via DApp Connector 4.0.1 (proofs generated through the wallet); browser E2E against the
+  local devnet; live at <https://emediong-etuk.github.io/AgePass/>.
+- **Try it without a wallet**: the whole story in the browser on the real compiled circuits and
+  an in-memory ledger, for anyone without Lace or test tokens.
 - **Docs**: architecture, privacy model, threat model, ADR log, business case, pitch deck,
   demo-video script, launch thread.
 
@@ -25,7 +28,7 @@
 | ------------------------------------- | -------------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
 | Contract compiles from a clean clone  | `npm ci && npm run compact`                        | 4 circuits, 8 keys, ~28 s            | `PROGRESS.md`                                      |
 | Contract spec (simulator)             | `npm test`                                         | 33/33 pass                           | CI, `contract/reports/junit.xml`                   |
-| SDK                                   | `npm test`                                         | 67/67 pass                           | CI, `sdk/reports/junit.xml`                        |
+| SDK                                   | `npm test`                                         | 69/69 pass                           | CI, `sdk/reports/junit.xml`                        |
 | Local end-to-end with assertions      | `npm run e2e:local`                                | all checks pass, 6 real transactions | `docs/evidence/e2e-local.txt`                      |
 | Every CLI command                     | `scripts/cli-smoke.sh`                             | pass                                 | `docs/evidence/cli-smoke-local.txt`                |
 | Browser end-to-end (Lace test double) | `npm run e2e:ui`                                   | all checks pass                      | `docs/evidence/ui-e2e-local.txt`, `docs/img/*.png` |

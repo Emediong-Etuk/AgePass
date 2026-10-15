@@ -14,8 +14,8 @@
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
 | **[emediong-etuk.github.io/AgePass](https://emediong-etuk.github.io/AgePass/)** | [`docs/pitch/deck.md`](docs/pitch/deck.md) · [PDF](docs/pitch/deck.pdf) | `54fc78d889…1069d2` ([details](#deployment)) |
 
-The live demo runs on Midnight Preview: browse the explorer with no wallet, or connect
-[Lace](https://www.lace.io/) (Preview, with tDUST) to try the wallet and the demo store.
+**Judges: no wallet needed.** [Try it without a wallet](https://emediong-etuk.github.io/AgePass/#/try)
+runs the whole story in your browser in 30 seconds. See [For judges](#3-for-judges).
 
 ---
 
@@ -44,7 +44,21 @@ An underage holder is stopped **on their own device** before a proof exists: not
 
 ---
 
-## 3. Judge quick start
+## 3. For judges
+
+### No setup (1–2 minutes)
+
+| What                                                                         | Needs     | Shows                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Demo video** (attached to the submission, 1:28)                            | nothing   | The full flow recorded live on Midnight Preview, every transaction real.                                                                                                                              |
+| **[Try it without a wallet](https://emediong-etuk.github.io/AgePass/#/try)** | a browser | Deploy → approve issuer → issue to an adult and a 16-year-old → store asks 18+ → adult verified (exact public record shown) → minor blocked → replay rejected. Real contract logic, simulated ledger. |
+| **[Live explorer](https://emediong-etuk.github.io/AgePass/#/explorer)**      | a browser | The real AgePass contract on Midnight Preview: issuers, counts and verification records, and what is _not_ there (no names, no birth dates).                                                          |
+
+The "Try" page runs the compiled Compact circuits in your browser against an in-memory ledger:
+every rule (approved issuers, Merkle membership, age cutoff, expiry, single-use requests) is
+enforced exactly as on-chain, but no proofs are generated and nothing is sent anywhere.
+
+### Run it yourself
 
 Prerequisites: **Node ≥ 22**, git, and the Compact toolchain pinned to the version the public
 networks support:
@@ -61,7 +75,7 @@ compact compile --version      # 0.31.1
 git clone https://github.com/Emediong-Etuk/AgePass && cd AgePass
 npm ci
 npm run compact      # compiles agepass.compact, generates ZK keys (~30 s)
-npm test             # 33 contract spec tests (simulator) + 67 SDK tests
+npm test             # 33 contract spec tests (simulator) + 69 SDK tests
 ```
 
 ### (b) 10 minutes: the whole story on a local Midnight network (Docker)
@@ -91,16 +105,18 @@ Expected highlights (full run: [`docs/evidence/e2e-local.txt`](docs/evidence/e2e
 Optional: `npm run e2e:ui` drives the web app in Chromium against the local devnet (issue →
 import → prove → unlock → underage blocked) and writes the screenshots in `docs/img/`.
 
-### (c) The live web app on Preview
+### (c) The live web app on Preview, with your own Lace wallet
 
-1. Install **Lace** (Chrome), create a Midnight wallet, switch it to **Preview**, set the proof
-   server to `http://localhost:6300`, get tNIGHT from the
-   [Preview faucet](https://midnight-tmnight-preview.nethermind.dev/) and register it for DUST.
-2. Run a local proof server (Lace needs one):
-   `docker run -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v`
-3. `npm run app:dev` and open the printed URL (or a hosted build), then follow the
-   landing page: **Wallet** → **Issuer desk** → **Demo store** → **Explorer**.
-   Use two Chrome profiles to play issuer and holder.
+1. Install **Lace** (Chrome), create a Midnight wallet and switch it to **Preview**. Get tNIGHT
+   from the [Preview faucet](https://midnight-tmnight-preview.nethermind.dev/), then **register
+   it for DUST generation** in Lace and wait a few minutes: every transaction pays its fee in
+   DUST, and the site tells you when the wallet has none.
+2. Open **[emediong-etuk.github.io/AgePass](https://emediong-etuk.github.io/AgePass/)** (or
+   `npm run app:dev`). Proofs are generated through Lace; if your Lace is set to a local proof
+   server, run one: `docker run -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v`
+3. **Issuer desk** → **Deploy your own AgePass** (you become its admin) → **Approve my own
+   issuer key** → issue to a holder key from **Wallet** → verify at the **Demo store**. Use two
+   Chrome profiles to play issuer and holder.
 
 For local UI work against the devnet: `VITE_NETWORK_ID=undeployed npm run app:dev`.
 

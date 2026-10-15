@@ -87,21 +87,46 @@ const RULES: Rule[] = [
 ];
 
 /**
- * Wallet (DApp Connector) errors carry their text in `code` and `reason`, often with an
- * empty `message`, so include those or the user sees a bare "Error:".
+ * One line per error in the cause chain. Wallet (DApp Connector) errors carry their text in
+ * `code`/`reason`, and Effect tagged errors in `_tag` plus their own fields, often with an
+ * empty `message`; include all of that or the user sees a bare "Error:".
  */
-function errorText(error: unknown): string {
+function errorText(error: unknown, depth = 0): string {
   if (error === null || error === undefined) return 'Unknown error';
   if (typeof error !== 'object') return String(error);
-  const e = error as { name?: unknown; message?: unknown; code?: unknown; reason?: unknown };
-  const parts = [e.message, e.reason]
-    .filter((x): x is string => typeof x === 'string' && x.trim() !== '')
-    .filter((x, i, all) => all.indexOf(x) === i);
-  const code = typeof e.code === 'string' && e.code !== '' ? ` [${e.code}]` : '';
-  const name = typeof e.name === 'string' && e.name !== '' ? e.name : 'Error';
-  const text = parts.join(' · ');
-  if (text || code) return `${name}${code}: ${text || 'no further detail from the wallet'}`;
-  return error instanceof Error ? `${name}: (no message)` : String(error);
+  const e = error as Record<string, unknown>;
+  const str = (k: string): string | undefined => {
+    const v = e[k];
+    return typeof v === 'string' && v.trim() !== '' ? v : undefined;
+  };
+  const name = str('_tag') ?? str('name') ?? 'Error';
+  const code = str('code') ? ` [${str('code')}]` : '';
+  const parts = [str('message'), str('reason')].filter(
+    (x, i, all): x is string => x !== undefined && all.indexOf(x) === i,
+  );
+  if (parts.length === 0) {
+    const skip = new Set(['name', 'message', 'stack', 'cause', '_tag', 'code', 'reason', 'type']);
+    const fields = Object.keys(e)
+      .filter((k) => !skip.has(k))
+      .map((k) => `${k}=${shown(e[k])}`);
+    if (fields.length) parts.push(fields.join(', ').slice(0, 300));
+  }
+  const line = `${name}${code}: ${parts.join(' · ') || '(no message)'}`;
+  const cause = e.cause;
+  if (cause !== undefined && cause !== null && depth < 3) {
+    return `${line}\n  caused by ${errorText(cause, depth + 1)}`;
+  }
+  return line;
+}
+
+function shown(v: unknown): string {
+  if (typeof v === 'bigint') return v.toString();
+  if (typeof v !== 'object' || v === null) return String(v);
+  try {
+    return JSON.stringify(v, (_k, x: unknown) => (typeof x === 'bigint' ? x.toString() : x));
+  } catch {
+    return '[object]';
+  }
 }
 
 export function describeError(error: unknown): FriendlyError {

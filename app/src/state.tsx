@@ -57,6 +57,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       proofServer: wallet.proofServer,
       proofServerOk: wallet.proofServerOk,
       walletProving: wallet.walletProving,
+      dust: wallet.dust,
     };
   }, [wallet]);
 

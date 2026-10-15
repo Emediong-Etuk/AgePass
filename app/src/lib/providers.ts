@@ -90,6 +90,12 @@ export async function browserProviders(
   onStage: (s: TxStage) => void,
 ): Promise<AgePassProviders> {
   setNetworkId(NETWORK);
+  // Lace fails with an empty error when it cannot pay the fee, so say it plainly up front.
+  if (wallet.dust === 0n) {
+    throw new Error(
+      'AgePass: your wallet has no DUST to pay the network fee. Get tNIGHT from the Preview faucet, register it for DUST generation in Lace, wait a few minutes, then press Re-check.',
+    );
+  }
   const { api, config } = wallet;
   const zkConfigProvider = new FetchZkConfigProvider<AgePassCircuitId>(
     zkAssetsBase(),
@@ -140,6 +146,8 @@ export type ConnectedWallet = {
   proofServerOk: boolean;
   /** The wallet can prove for us (DApp Connector `getProvingProvider`). */
   walletProving: boolean;
+  /** Spendable DUST as the wallet reported it at connect time (undefined if unknown). */
+  dust: bigint | undefined;
 };
 
 /**
