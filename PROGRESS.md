@@ -7,8 +7,8 @@ Status legend: ✅ done · 🟡 in progress · ⏸ waiting on Greg · ⬜ not st
 | Phase | Status | Evidence |
 |---|---|---|
 | 0. Environment and research | ✅ | `docs/decisions.md` ADR-000; `compact compile --version` → 0.31.1, language 0.23.0 |
-| 1. Contract | ⬜ | |
-| 2. Simulator and tests | ⬜ | |
+| 1. Contract | ✅ | `contract/src/agepass.compact`; clean clone → `npm ci && npm run compact` builds 4 circuits / 8 keys (~28 s) |
+| 2. Simulator and tests | ✅ | `npm test`: 33 contract spec tests + 17 date tests pass |
 | 3. SDK | ⬜ | |
 | 4. CLI and local end-to-end | ⬜ | |
 | 5. Web app | ⬜ | |
@@ -19,7 +19,7 @@ Status legend: ✅ done · 🟡 in progress · ⏸ waiting on Greg · ⬜ not st
 ## Hackathon requirements checklist
 
 ### Technical gate
-- [ ] Compact contract compiles from a clean clone with documented commands
+- [x] Compact contract compiles from a clean clone with documented commands (Phase 1 gate: `git clone` → `npm ci` → `npm run compact`)
 - [ ] Meaningful Midnight functionality: private state, witnesses, `disclose()` boundaries, ZK membership proof, public + private ledger data
 - [ ] Original work (not a fork/copy)
 - [ ] Public GitHub repo with `midnightntwrk` topic (+ `compact`, `zero-knowledge`, `privacy`, `age-verification`, `midnight`) ⏸
