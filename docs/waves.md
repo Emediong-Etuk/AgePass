@@ -11,7 +11,7 @@
   verification records, sealed admin key, six exported pure hash circuits.
 - **Simulator + 33 spec tests** covering every rule, attack and the privacy regression.
 - **SDK**: typed `AgePassAPI`, challenges, site-side verifier, receipts, dates, friendly errors.
-  69 tests, ~99% line coverage of the helpers.
+  70 tests, ~99% line coverage of the helpers.
 - **CLI** with a command per role, encrypted private state, local devnet pinned to the
   compatibility matrix, `demo:local` and `e2e:local`.
 - **Web app**: holder wallet, demo issuer desk, Corner Cellar demo store, public explorer;
@@ -28,7 +28,7 @@
 | ------------------------------------- | -------------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
 | Contract compiles from a clean clone  | `npm ci && npm run compact`                        | 4 circuits, 8 keys, ~28 s            | `PROGRESS.md`                                      |
 | Contract spec (simulator)             | `npm test`                                         | 33/33 pass                           | CI, `contract/reports/junit.xml`                   |
-| SDK                                   | `npm test`                                         | 69/69 pass                           | CI, `sdk/reports/junit.xml`                        |
+| SDK                                   | `npm test`                                         | 70/70 pass                           | CI, `sdk/reports/junit.xml`                        |
 | Local end-to-end with assertions      | `npm run e2e:local`                                | all checks pass, 6 real transactions | `docs/evidence/e2e-local.txt`                      |
 | Every CLI command                     | `scripts/cli-smoke.sh`                             | pass                                 | `docs/evidence/cli-smoke-local.txt`                |
 | Browser end-to-end (Lace test double) | `npm run e2e:ui`                                   | all checks pass                      | `docs/evidence/ui-e2e-local.txt`, `docs/img/*.png` |

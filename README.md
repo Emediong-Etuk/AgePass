@@ -75,7 +75,7 @@ compact compile --version      # 0.31.1
 git clone https://github.com/Emediong-Etuk/AgePass && cd AgePass
 npm ci
 npm run compact      # compiles agepass.compact, generates ZK keys (~30 s)
-npm test             # 33 contract spec tests (simulator) + 69 SDK tests
+npm test             # 33 contract spec tests (simulator) + 70 SDK tests
 ```
 
 ### (b) 10 minutes: the whole story on a local Midnight network (Docker)

@@ -372,6 +372,19 @@ describe('friendly errors', () => {
     expect(describeError(new Error('')).detail).toBe('Error: (no message)');
   });
 
+  it('explains a Lace fee-proof failure (Wallet.Proving)', () => {
+    const lace = Object.assign(new Error(''), {
+      _id: 'FiberFailure',
+      cause: {
+        _id: 'Cause',
+        failure: { message: 'Failed to prove transaction', _tag: 'Wallet.Proving' },
+      },
+    });
+    const f = describeError(lace);
+    expect(f.title).toBe('Lace could not generate its fee proof.');
+    expect(f.fix).toContain('docker run -p 6300:6300');
+  });
+
   it('shows Effect tagged errors, their fields and the cause chain', () => {
     const inner = Object.assign(new Error(''), { _tag: 'ProveError', circuit: 'deploy' });
     const outer = Object.assign(new Error(''), { _tag: 'DeployTxFailed', cause: inner });

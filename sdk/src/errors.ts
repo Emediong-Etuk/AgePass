@@ -57,6 +57,13 @@ const RULES: Rule[] = [
     nothingShared: true,
   },
   {
+    // Lace proves the fee part of every transaction through the proof server in its settings.
+    test: /Wallet\.Proving|failed to prove transaction/i,
+    title: 'Lace could not generate its fee proof.',
+    fix: 'Lace proves fees through the proof server set in Lace (Settings → Midnight → Proof server). If that is localhost:6300, start one: docker run -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v, then retry.',
+    nothingShared: true,
+  },
+  {
     test: /6300|proof server|prover|ECONNREFUSED.*6300/i,
     title: 'The local proof server is not reachable.',
     fix: 'Start it: docker run -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v',
