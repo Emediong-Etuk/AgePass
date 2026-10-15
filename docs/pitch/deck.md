@@ -189,6 +189,8 @@ Looking for **an issuer** and **an age-gated platform** to pilot with.
 
 **github.com/Emediong-Etuk/AgePass** · Built on Midnight · Apache-2.0
 
+Live on Midnight Preview: `54fc78d8890099e2…221069d2`
+
 <!--
 Thanks. If you run a platform with an age gate, or you already do KYC, let's talk.
 -->

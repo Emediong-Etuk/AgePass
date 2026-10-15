@@ -4,17 +4,17 @@ Status legend: ✅ done · 🟡 in progress · ⏸ waiting on Greg · ⬜ not st
 
 ## Phases
 
-| Phase                         | Status | Evidence                                                                                                                                 |
-| ----------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Environment and research   | ✅     | `docs/decisions.md` ADR-000; `compact compile --version` → 0.31.1, language 0.23.0                                                       |
-| 1. Contract                   | ✅     | `contract/src/agepass.compact`; clean clone → `npm ci && npm run compact` builds 4 circuits / 8 keys (~28 s)                             |
-| 2. Simulator and tests        | ✅     | 33 contract spec tests + SDK date tests pass                                                                                             |
-| 3. SDK                        | ✅     | `sdk/src/*`; 67 SDK tests, ~99% line / 94% branch coverage of helpers                                                                    |
-| 4. CLI and local end-to-end   | ✅     | `npm run e2e:local` all checks pass (`docs/evidence/e2e-local.txt`); every CLI command (`docs/evidence/cli-smoke-local.txt`)             |
-| 5. Web app                    | ✅     | `npm run e2e:ui`: issue and prove from Chromium against a real local node, store unlocks (`docs/evidence/ui-e2e-local.txt`, `docs/img/`) |
-| 6. Preview deployment         | ⏸      | needs Greg's funded Lace wallet / Preview wallet seed (see "Things only Greg does")                                                      |
-| 7. Docs, CI, licensing, pitch | ✅     | README, `docs/*`, `.github/workflows/ci.yml`, `docs/pitch/deck.{md,pdf}`                                                                 |
-| 8. Final verification         | ✅     | fresh clone from GitHub passes compile, 100 tests, lint, licence, format, build, `e2e:local` (`docs/evidence/fresh-clone.md`); CI green  |
+| Phase                         | Status | Evidence                                                                                                                                                   |
+| ----------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Environment and research   | ✅     | `docs/decisions.md` ADR-000; `compact compile --version` → 0.31.1, language 0.23.0                                                                         |
+| 1. Contract                   | ✅     | `contract/src/agepass.compact`; clean clone → `npm ci && npm run compact` builds 4 circuits / 8 keys (~28 s)                                               |
+| 2. Simulator and tests        | ✅     | 33 contract spec tests + SDK date tests pass                                                                                                               |
+| 3. SDK                        | ✅     | `sdk/src/*`; 67 SDK tests, ~99% line / 94% branch coverage of helpers                                                                                      |
+| 4. CLI and local end-to-end   | ✅     | `npm run e2e:local` all checks pass (`docs/evidence/e2e-local.txt`); every CLI command (`docs/evidence/cli-smoke-local.txt`)                               |
+| 5. Web app                    | ✅     | `npm run e2e:ui`: issue and prove from Chromium against a real local node, store unlocks (`docs/evidence/ui-e2e-local.txt`, `docs/img/`)                   |
+| 6. Preview deployment         | ✅     | contract `54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2` on Preview; full scripted story passed there (`docs/evidence/e2e-preview.txt`) |
+| 7. Docs, CI, licensing, pitch | ✅     | README, `docs/*`, `.github/workflows/ci.yml`, `docs/pitch/deck.{md,pdf}`                                                                                   |
+| 8. Final verification         | ✅     | fresh clone from GitHub passes compile, 100 tests, lint, licence, format, build, `e2e:local` (`docs/evidence/fresh-clone.md`); CI green                    |
 
 ## Hackathon requirements checklist
 

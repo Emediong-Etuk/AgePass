@@ -10,9 +10,9 @@
 > Built on [Midnight](https://midnight.network) for the Midnight Network Buildathon (Wave 1).
 > Demo data only: AgePass never accepts real ID documents.
 
-| Pitch deck                                                              | Demo video                                                         | Contract (Preview)                                    |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
-| [`docs/pitch/deck.md`](docs/pitch/deck.md) · [PDF](docs/pitch/deck.pdf) | _link added after recording_ ([script](docs/pitch/demo-script.md)) | _pending Preview deployment_ ([waves](docs/waves.md)) |
+| Pitch deck                                                              | Demo video                                                         | Contract (Preview)                           |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------- |
+| [`docs/pitch/deck.md`](docs/pitch/deck.md) · [PDF](docs/pitch/deck.pdf) | _link added after recording_ ([script](docs/pitch/demo-script.md)) | `54fc78d889…1069d2` ([details](#deployment)) |
 
 ---
 
@@ -226,13 +226,27 @@ state served by a real indexer.
 ## 9. Current state
 
 **Works today:** contract, simulator tests, SDK, CLI, local devnet demo and E2E, web app with
-Lace wiring, browser E2E with real proofs on a local node, docs, CI.
+Lace wiring, browser E2E with real proofs on a local node, docs, CI, and a **live deployment on
+Midnight Preview**.
+
+### Deployment
+
+| Network     | Contract address                                                   | Evidence                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Preview** | `54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2` | the full scripted story (`npm run e2e -w @agepass/cli -- --network preview`) passed on Preview with 6 real transactions: [`docs/evidence/e2e-preview.txt`](docs/evidence/e2e-preview.txt) |
+
+Check it yourself without a wallet: `npm run agepass -- --network preview --contract 54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2 ledger`,
+or open the web app's **Explorer** (it defaults to this deployment on Preview). Explorer:
+<https://preview.midnightexplorer.com/>.
 
 **Known limitations:**
 
-- **Preview deployment pending.** It needs the author’s funded Lace wallet (Phase 6). The
-  browser flow is verified end to end on a local node using a DApp Connector test double backed
-  by a real wallet; live Lace on Preview is the remaining step.
+- **Live Lace on Preview is not yet hand-tested.** The contract is live on Preview and the full
+  scripted flow passed there; the browser flow is verified end to end on a local node using a
+  DApp Connector test double backed by a real wallet.
+- The Preview deployment's **admin key lived in the build session**, so new issuers cannot be
+  approved on it; the demo issuer was approved during the run. Deploy your own from the Issuer
+  desk to be its admin.
 - Lace needs a **local proof server** (Docker) for testers.
 - **Revocation is by expiry only**; removing an issuer stops new issuance but does not revoke
   its existing credentials (the wallet flags them).

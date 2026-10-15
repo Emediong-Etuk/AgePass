@@ -225,10 +225,20 @@ function AdminPanel(props: {
           </div>
         </form>
       ) : (
-        <p className="muted small">
-          This browser is not the admin of the configured deployment. Ask the admin to approve your
-          issuer key.
-        </p>
+        <>
+          <p className="muted small">
+            This browser is not the admin of the configured deployment. Ask its admin to approve
+            your issuer key, or deploy your own AgePass and become its admin.
+          </p>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={wallet.kind !== 'connected' || tx.busy}
+            onClick={() => void deploy()}
+          >
+            Deploy your own AgePass
+          </button>
+        </>
       )}
       {tx.stage && <TxProgress stage={tx.stage} startedAt={tx.startedAt} />}
       {tx.error !== undefined && <ErrorNotice error={tx.error} />}

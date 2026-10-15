@@ -1,0 +1,87 @@
+
+━━ AgePass demo on preview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Prove you are 18+ without showing your ID. Everything below is DEMO data.
+› Syncing fee wallet
+  Fee wallet mn_addr_preview1k3dvhlpmva0w8he2afs27f7gfh9zn93mnr70l8jjurujdct6fhrs9r7am6
+  NIGHT 5000000000, DUST 0
+› Registering 1 NIGHT UTXO(s) for DUST generation
+› Waiting for DUST to accrue
+
+━━ 1. Deploy AgePass (the deployer becomes admin) ━━━━━━━━━━━━━━━━━━━━━━
+› Deploying contract…
+  done in 21.8 s
+  contract:        54fc78d8890099e24fdf91f4a4f72cb231659393ee5264462b4496b9221069d2
+  explorer:        https://preview.midnightexplorer.com
+
+━━ 2. Admin approves an issuer (a KYC provider, bank or telco in real life) 
+› admin → addIssuer…
+  done in 23.2 s
+  issuer key:      0x713607…67f07b
+
+━━ 3. Issuer checks ID once, off-chain, and issues credentials ━━━━━━━━━
+› Ada (adult) shows holder key 0xa9f62f…9992ba to the issuer
+› issuer → issueCredential (born 1999-10-15, DEMO)…
+  done in 22.8 s
+✅ Ada (adult) imported the receipt; credential found in the registry
+  ✓ Ada (adult)'s credential is in the tree
+› Max (16, minor) shows holder key 0xf0b92d…cf74b8 to the issuer
+› issuer → issueCredential (born 2010-10-15, DEMO)…
+  done in 23.9 s
+✅ Max (16, minor) imported the receipt; credential found in the registry
+  ✓ Max (16, minor)'s credential is in the tree
+
+━━ 4. Corner Cellar (demo store) asks: "Are you 18 or older?" ━━━━━━━━━━
+  site:            Corner Cellar (demo store) (cornercellar.example)
+  challengeId:     0xe1b124…1b62e8
+  cutoffDate:      2008-10-15 (born on or before)
+  checkedOn:       2026-10-15
+
+━━ 5. Ada proves she is 18+ with a zero-knowledge proof ━━━━━━━━━━━━━━━━
+› Generating ZK proof and submitting proveAge…
+  done in 23.6 s
+  ✓ nym on-chain equals hash(holder secret, site)
+✅ verified at cornercellar.example: welcome, nym 0xb6f00c…8e7a73
+  on-chain record → siteId 0x6b9f…b746, cutoff 2008-10-15, checked 2026-10-15
+  ✓ Ada is verified at Corner Cellar
+
+━━ 6. Max (16) tries the same store ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ blocked because: age requirement not met
+❌ AgePass couldn't confirm this request. (age requirement not met)
+  ✓ no transaction was submitted
+  ✓ ledger unchanged
+  transactions sent for this attempt: 0. Nothing reached the chain.
+
+━━ 7. Someone replays Ada's already-answered challenge ━━━━━━━━━━━━━━━━━
+  ✓ blocked because: already answered
+❌ This request was already answered. (already answered)
+  ✓ no transaction was submitted
+  ✓ ledger unchanged
+  transactions sent for this attempt: 0. Nothing reached the chain.
+
+━━ 8. Ada visits a different site: a new, unlinkable nickname ━━━━━━━━━━
+› Generating ZK proof and submitting proveAge…
+  done in 28.5 s
+  ✓ nym on-chain equals hash(holder secret, site)
+✅ verified at arcade.example: welcome, nym 0x7a80bc…478013
+  on-chain record → siteId 0xf2a6…bee7, cutoff 2008-10-15, checked 2026-10-15
+  ✓ Ada's nym differs between the two sites
+  Corner Cellar:   nym 0xb6f00c…8e7a73
+  Pixel Arcade:    nym 0x7a80bc…478013
+
+━━ 9. Everything the public can see on-chain ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  admin:           0x955c89…887fc4
+  issuers:         0x713607…67f07b
+  credentials:     2 (as Merkle leaf hashes; no names, no dates)
+  verifications:   2
+    0x1e25…65f0  site 0xf2a6…bee7  nym 0x7a80…8013  cutoff 2008-10-15  checked 2026-10-15
+    0xe1b1…62e8  site 0x6b9f…b746  nym 0xb6f0…7a73  cutoff 2008-10-15  checked 2026-10-15
+  ✓ issuer is listed publicly
+  ✓ no secret, holder key or birth date of Ada (adult) on-chain
+  ✓ no secret, holder key or birth date of Max (16, minor) on-chain
+✅ Scanned 2568 bytes of public state: no birth dates, holder keys or secrets.
+  Ada is 27: the chain only knows she was born on or before 2008-10-15.
+
+━━ Demo complete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  transactions:    6
+✅ e2e: all checks passed
+exit=0
