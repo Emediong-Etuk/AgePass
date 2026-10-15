@@ -15,7 +15,13 @@
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { type Browser, type BrowserContext, type Page, chromium } from 'playwright';
+import {
+  type Browser,
+  type BrowserContext,
+  type CDPSession,
+  type Page,
+  chromium,
+} from 'playwright';
 import type {
   Binding,
   PreBinding,
@@ -43,20 +49,74 @@ const SIZE = { width: 1280, height: 720 };
 // ── recording helpers ──────────────────────────────────────────────────────────────────
 
 type Mark = { name: string; t: number };
+type Frame = { ts: number; file: string };
+
+/**
+ * One browser page recorded through the CDP screencast. Every frame carries the wall-clock
+ * time it was painted, and marks use the same clock, so the edit cuts exactly where the
+ * script says (Playwright's recordVideo drifts against wall-clock marks).
+ */
 class Take {
   readonly marks: Mark[] = [];
-  readonly t0 = Date.now();
+  readonly frames: Frame[] = [];
+  readonly dir: string;
+  private cdp?: CDPSession;
+  private pending?: { ts: number; data: string };
+  /** Minimum gap between kept frames; widened during long waits that get sped up. */
+  private minGap = 1 / 30;
   constructor(
     readonly page: Page,
     readonly name: string,
-  ) {}
+  ) {
+    this.dir = path.join(RAW, name);
+    mkdirSync(this.dir, { recursive: true });
+  }
+  async start() {
+    const cdp = await this.page.context().newCDPSession(this.page);
+    this.cdp = cdp;
+    cdp.on('Page.screencastFrame', (f) => {
+      const ts = f.metadata.timestamp ?? Date.now() / 1000;
+      const last = this.frames.at(-1)?.ts ?? 0;
+      if (ts - last >= this.minGap) {
+        this.pending = undefined;
+        this.save(ts, f.data);
+      } else this.pending = { ts, data: f.data };
+      cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
+    });
+    await cdp.send('Page.startScreencast', {
+      format: 'jpeg',
+      quality: 85,
+      maxWidth: SIZE.width,
+      maxHeight: SIZE.height,
+      everyNthFrame: 1,
+    });
+  }
+  async stop() {
+    await this.cdp?.send('Page.stopScreencast').catch(() => {});
+    this.flush();
+  }
+  /** Keep fewer frames while waiting on proofs / blocks (that footage is sped up). */
+  sparse(on: boolean) {
+    this.flush();
+    this.minGap = on ? 0.25 : 1 / 30;
+  }
   mark(name: string) {
-    this.marks.push({ name, t: (Date.now() - this.t0) / 1000 });
+    this.flush();
+    this.marks.push({ name, t: Date.now() / 1000 });
   }
   at(name: string): number {
     const m = this.marks.find((x) => x.name === name);
     if (!m) throw new Error(`film: missing mark ${name} in ${this.name}`);
     return m.t;
+  }
+  private flush() {
+    if (this.pending) this.save(this.pending.ts, this.pending.data);
+    this.pending = undefined;
+  }
+  private save(ts: number, data: string) {
+    const file = path.join(this.dir, `${String(this.frames.length).padStart(6, '0')}.jpg`);
+    writeFileSync(file, Buffer.from(data, 'base64'));
+    this.frames.push({ ts, file });
   }
 }
 
@@ -198,7 +258,6 @@ async function newTake(browser: Browser, session: Session, contract: string, nam
   const ctx = await browser.newContext({
     viewport: SIZE,
     deviceScaleFactor: 1,
-    recordVideo: { dir: RAW, size: SIZE },
   });
   await withDemoWallet(ctx, session);
   await ctx.addInitScript(
@@ -206,7 +265,9 @@ async function newTake(browser: Browser, session: Session, contract: string, nam
   );
   const page = await ctx.newPage();
   page.on('pageerror', (err) => log.warn(`page error: ${err.message}`));
-  return new Take(page, name);
+  const take = new Take(page, name);
+  await take.start();
+  return take;
 }
 
 async function unlockIfAsked(page: Page) {
@@ -347,7 +408,9 @@ async function main() {
     await hold(p, 3500);
     await p.getByRole('button', { name: 'Issue credential' }).click();
     A.mark('issue_wait_start');
+    A.sparse(true);
     await p.getByText('Receipt for the holder').waitFor({ timeout: 300_000 });
+    A.sparse(false);
     A.mark('issue_wait_end');
     await caption(
       p,
@@ -392,7 +455,9 @@ async function main() {
       'Real proof and transaction on Midnight Preview (sped up)',
     );
     A.mark('prove_start');
+    A.sparse(true);
     await p.getByRole('link', { name: /Return to/ }).waitFor({ timeout: 300_000 });
+    A.sparse(false);
     A.mark('prove_end');
     await hold(p, 1800);
     await p.getByRole('link', { name: /Return to/ }).click();
@@ -414,6 +479,8 @@ async function main() {
     await createVault(q);
     await q.getByRole('button', { name: 'Generate my AgePass key' }).click();
     const minorPk = (await q.locator('.copy code').first().innerText()).trim();
+    A.sparse(true);
+    B.sparse(true);
     await nav(p, '/issuer'); // A issues to the minor (cut from the film)
     await p.getByLabel('Holder public key (from their wallet)', { exact: true }).fill(minorPk);
     await p.getByLabel('Verified birth date (DEMO)').fill(yearsAgoIso(16));
@@ -423,6 +490,8 @@ async function main() {
     await q.getByLabel('Credential receipt JSON').fill(await minorReceipt.innerText());
     await q.getByRole('button', { name: 'Import credential' }).click();
     await q.getByText('Your credential').waitFor({ timeout: 90_000 });
+    A.sparse(false);
+    B.sparse(false);
     await nav(q, '/store');
     await caption(q, '5 · A 16-year-old tries the same store');
     B.mark('minor_start');
@@ -450,19 +519,21 @@ async function main() {
     await hold(p, 6000);
     A.mark('explorer_end');
 
-    // Finalize videos.
-    const files: Record<string, string> = {};
-    for (const take of [A, B]) {
-      await take.page.context().close();
-      const f = path.join(RAW, `${take.name}.webm`);
-      await take.page.video()?.saveAs(f);
-      files[take.name] = f;
-    }
+    // Finalize recordings.
+    for (const take of [A, B]) await take.stop();
     writeFileSync(
       path.join(RAW, 'marks.json'),
-      JSON.stringify({ main: A.marks, minor: B.marks, contract: admin.contractAddress }, null, 2),
+      JSON.stringify(
+        {
+          contract: admin.contractAddress,
+          main: { marks: A.marks, frames: A.frames },
+          minor: { marks: B.marks, frames: B.frames },
+        },
+        null,
+        2,
+      ),
     );
-    compose(files, A, B);
+    compose(A, B);
   } finally {
     await browser?.close();
     app?.kill();
@@ -474,46 +545,53 @@ async function main() {
 
 type Seg =
   | { card: string; secs: number }
-  | { file: string; from: number; to: number; speed?: number };
+  | { take: Take; from: number; to: number; speed?: number };
 
-function compose(files: Record<string, string>, A: Take, B: Take) {
-  const main = files.main as string;
-  const minor = files.minor as string;
+/** ffmpeg concat-demuxer list showing `take` from wall-clock `a` to `b`, sped up `k`×. */
+function frameList(take: Take, a: number, b: number, k: number): string {
+  const fr = take.frames;
+  let i = fr.findLastIndex((f) => f.ts <= a);
+  if (i < 0) i = 0;
+  const lines: string[] = [];
+  let last = '';
+  for (let j = i; j < fr.length && (fr[j] as Frame).ts < b; j++) {
+    const f = fr[j] as Frame;
+    const next = fr[j + 1]?.ts ?? b;
+    const dur = (Math.min(next, b) - Math.max(f.ts, a)) / k;
+    if (dur <= 0) continue;
+    lines.push(`file '${f.file}'`, `duration ${dur.toFixed(4)}`);
+    last = f.file;
+  }
+  if (!last) throw new Error(`film: no frames in ${take.name} between ${a} and ${b}`);
+  lines.push(`file '${last}'`); // the concat demuxer ignores the last entry's duration
+  return lines.join('\n');
+}
+
+function compose(A: Take, B: Take) {
   const segs: Seg[] = [
     { card: 'title', secs: 4 },
     { card: 'problem', secs: 6 },
     { card: 'solution', secs: 7 },
-    { file: main, from: A.at('landing_start'), to: A.at('landing_end') },
-    { file: main, from: A.at('wallet_start'), to: A.at('wallet_end') },
-    { file: main, from: A.at('issuer_start'), to: A.at('issuer_key') },
-    { file: main, from: A.at('approved'), to: A.at('issue_wait_start') },
-    { file: main, from: A.at('issue_wait_start'), to: A.at('issue_wait_end'), speed: 10 },
-    { file: main, from: A.at('issue_wait_end'), to: A.at('issuer_end') },
-    { file: main, from: A.at('import_start'), to: A.at('import_end') },
-    { file: main, from: A.at('store_start'), to: A.at('prove_start') },
-    { file: main, from: A.at('prove_start'), to: A.at('prove_end'), speed: 8 },
-    { file: main, from: A.at('prove_end'), to: A.at('return_click') },
-    { file: main, from: A.at('unlocked'), to: A.at('store_end') },
-    { file: minor, from: B.at('minor_start'), to: B.at('minor_end') },
-    { file: main, from: A.at('explorer_start'), to: A.at('explorer_end') },
+    { take: A, from: A.at('landing_start'), to: A.at('landing_end') },
+    { take: A, from: A.at('wallet_start'), to: A.at('wallet_end') },
+    { take: A, from: A.at('issuer_start'), to: A.at('issuer_key') },
+    { take: A, from: A.at('approved'), to: A.at('issue_wait_start') },
+    { take: A, from: A.at('issue_wait_start'), to: A.at('issue_wait_end'), speed: 10 },
+    { take: A, from: A.at('issue_wait_end'), to: A.at('issuer_end') },
+    { take: A, from: A.at('import_start'), to: A.at('import_end') },
+    { take: A, from: A.at('store_start'), to: A.at('prove_start') },
+    { take: A, from: A.at('prove_start'), to: A.at('prove_end'), speed: 8 },
+    { take: A, from: A.at('prove_end'), to: A.at('return_click') },
+    { take: A, from: A.at('unlocked'), to: A.at('store_end') },
+    { take: B, from: B.at('minor_start'), to: B.at('minor_end') },
+    { take: A, from: A.at('explorer_start'), to: A.at('explorer_end') },
     { card: 'end', secs: 7 },
   ];
+  const common = ['-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-r', '30'];
+  const fit = `scale=${SIZE.width}:${SIZE.height}:force_original_aspect_ratio=decrease,pad=${SIZE.width}:${SIZE.height}:(ow-iw)/2:(oh-ih)/2:color=0x070e22,setsar=1`;
   const parts: string[] = [];
   segs.forEach((s, i) => {
     const out = path.join(RAW, `seg-${String(i).padStart(2, '0')}.mp4`);
-    const common = [
-      '-an',
-      '-c:v',
-      'libx264',
-      '-preset',
-      'medium',
-      '-crf',
-      '18',
-      '-pix_fmt',
-      'yuv420p',
-      '-r',
-      '30',
-    ];
     if ('card' in s) {
       const fade = `fade=t=in:st=0:d=0.4,fade=t=out:st=${s.secs - 0.4}:d=0.4`;
       run([
@@ -524,21 +602,22 @@ function compose(files: Record<string, string>, A: Take, B: Take) {
         '-i',
         path.join(RAW, `card-${s.card}.png`),
         '-vf',
-        `fps=30,${fade},format=yuv420p`,
+        `${fit},fps=30,${fade},format=yuv420p`,
         ...common,
         out,
       ]);
     } else {
-      const k = s.speed ?? 1;
+      const list = path.join(RAW, `seg-${String(i).padStart(2, '0')}.txt`);
+      writeFileSync(list, frameList(s.take, s.from, s.to, s.speed ?? 1));
       run([
-        '-ss',
-        s.from.toFixed(2),
-        '-to',
-        s.to.toFixed(2),
+        '-f',
+        'concat',
+        '-safe',
+        '0',
         '-i',
-        s.file,
+        list,
         '-vf',
-        `setpts=(PTS-STARTPTS)/${k},fps=30,scale=${SIZE.width}:${SIZE.height}`,
+        `${fit},fps=30,format=yuv420p`,
         ...common,
         out,
       ]);
