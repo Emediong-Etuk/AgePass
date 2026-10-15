@@ -1,0 +1,46 @@
+{
+  "name": "agepass",
+  "version": "0.1.0",
+  "description": "AgePass: prove you are over 18 without showing your ID. Zero-knowledge age credentials on Midnight.",
+  "license": "Apache-2.0",
+  "author": "Emediong Etuk Gregory",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "contract",
+    "sdk",
+    "cli",
+    "app"
+  ],
+  "scripts": {
+    "compact": "npm run compact -w @agepass/contract",
+    "build": "npm run build -w @agepass/contract && npm run build -w @agepass/sdk && npm run build -w @agepass/cli && npm run build -w @agepass/app",
+    "test": "npm run test -w @agepass/contract && npm run test -w @agepass/sdk",
+    "test:coverage": "npm run test:coverage -w @agepass/contract && npm run test:coverage -w @agepass/sdk",
+    "lint": "eslint . && npm run typecheck",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "license:check": "node scripts/license-check.mjs",
+    "devnet:up": "docker compose -f cli/standalone.yml up -d --wait",
+    "devnet:down": "docker compose -f cli/standalone.yml down -v",
+    "demo:local": "npm run demo -w @agepass/cli",
+    "e2e:local": "npm run e2e -w @agepass/cli",
+    "app:dev": "npm run dev -w @agepass/app"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "22.19.1",
+    "@vitest/coverage-v8": "4.0.15",
+    "eslint": "9.39.1",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.7.4",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.49.0",
+    "vitest": "4.0.15"
+  }
+}

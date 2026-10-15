@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+**/dist/
+*.tsbuildinfo
+.vite/
+
+# Compact compiler output: always rebuilt by `npm run compact`
+contract/src/managed/
+
+# ZK assets copied into the web app at build time
+app/public/keys/
+app/public/zkir/
+
+# Secrets and local state: never commit
+.env
+.env.*
+!.env.example
+*.mnemonic
+*.seed
+midnight-level-db/
+.agepass/
+
+# Test and coverage reports
+coverage/
+**/reports/
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,28 @@
+{
+  "name": "@agepass/contract",
+  "version": "0.1.0",
+  "description": "AgePass Compact contract, witnesses and simulator tests",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "compact": "compact compile src/agepass.compact src/managed/agepass",
+    "compact:skip-zk": "compact compile --skip-zk src/agepass.compact src/managed/agepass",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp -R src/managed dist/managed && cp src/agepass.compact dist/",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.16.0"
+  }
+}
