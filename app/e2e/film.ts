@@ -62,8 +62,10 @@ class Take {
 
 const hold = (page: Page, ms: number) => page.waitForTimeout(ms);
 
-/** On-screen caption (the video has no voice-over), drawn over the app. */
+/** Optional on-screen caption drawn over the app (AGEPASS_FILM_CAPTIONS=1); off by default. */
+const CAPTIONS = process.env.AGEPASS_FILM_CAPTIONS === '1';
 async function caption(page: Page, title: string, sub = '') {
+  if (!CAPTIONS) return;
   await page.evaluate(
     ([t, s]) => {
       let el = document.getElementById('film-cap');
