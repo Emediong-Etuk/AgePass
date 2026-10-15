@@ -73,6 +73,9 @@ code,
 .text-warn {
   color: var(--warn);
 }
+.text-bad {
+  color: var(--bad);
+}
 
 :focus-visible {
   outline: 3px solid var(--accent);
@@ -366,6 +369,10 @@ textarea {
 input:focus,
 textarea:focus {
   border-color: var(--accent);
+}
+input[aria-invalid='true'],
+input[aria-invalid='true']:focus {
+  border-color: var(--bad);
 }
 textarea.mono,
 input.mono {

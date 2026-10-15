@@ -20,6 +20,9 @@ export function VaultGate({ children, intro }: { children: ReactNode; intro: Rea
   if (vault) return <>{children}</>;
 
   const problem = pass.length > 0 ? passwordProblem(pass) : null;
+  // Live check that the repeat field matches, so a typo is caught before the wallet exists.
+  const mismatch = !exists && confirm.length > 0 && confirm !== pass;
+  const matches = !exists && confirm.length > 0 && confirm === pass;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -67,18 +70,37 @@ export function VaultGate({ children, intro }: { children: ReactNode; intro: Rea
           </span>
         </div>
         {!exists && (
-          <label className="field">
-            <span className="label">Repeat passphrase</span>
+          <div className="field">
+            <label className="label" htmlFor="vault-confirm">
+              Repeat passphrase
+            </label>
             <input
+              id="vault-confirm"
               type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              aria-describedby="confirm-hint"
+              aria-invalid={mismatch}
               required
             />
-          </label>
+            <span
+              id="confirm-hint"
+              className={`small ${mismatch ? 'text-bad' : matches ? 'accent' : 'muted'}`}
+              aria-live="polite"
+            >
+              {mismatch
+                ? 'Passphrases don’t match yet.'
+                : matches
+                  ? '✓ Passphrases match.'
+                  : 'Type the same passphrase again.'}
+            </span>
+          </div>
         )}
-        <button className="btn btn-primary" disabled={busy || (!exists && problem !== null)}>
+        <button
+          className="btn btn-primary"
+          disabled={busy || (!exists && (problem !== null || confirm !== pass))}
+        >
           {busy ? 'Working…' : exists ? 'Unlock' : 'Create wallet'}
         </button>
         <p className="muted small">

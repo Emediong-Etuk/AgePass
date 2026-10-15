@@ -86,9 +86,26 @@ const RULES: Rule[] = [
   },
 ];
 
+/**
+ * Wallet (DApp Connector) errors carry their text in `code` and `reason`, often with an
+ * empty `message`, so include those or the user sees a bare "Error:".
+ */
+function errorText(error: unknown): string {
+  if (error === null || error === undefined) return 'Unknown error';
+  if (typeof error !== 'object') return String(error);
+  const e = error as { name?: unknown; message?: unknown; code?: unknown; reason?: unknown };
+  const parts = [e.message, e.reason]
+    .filter((x): x is string => typeof x === 'string' && x.trim() !== '')
+    .filter((x, i, all) => all.indexOf(x) === i);
+  const code = typeof e.code === 'string' && e.code !== '' ? ` [${e.code}]` : '';
+  const name = typeof e.name === 'string' && e.name !== '' ? e.name : 'Error';
+  const text = parts.join(' · ');
+  if (text || code) return `${name}${code}: ${text || 'no further detail from the wallet'}`;
+  return error instanceof Error ? `${name}: (no message)` : String(error);
+}
+
 export function describeError(error: unknown): FriendlyError {
-  const detail =
-    error instanceof Error ? `${error.name}: ${error.message}` : String(error ?? 'Unknown error');
+  const detail = errorText(error);
   for (const r of RULES) {
     if (r.test.test(detail)) {
       return {

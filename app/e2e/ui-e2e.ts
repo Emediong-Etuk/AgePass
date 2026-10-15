@@ -7,8 +7,11 @@
 // that implements the same DApp Connector 4.x calls the app uses. Balancing and submission
 // are delegated to a real wallet-SDK wallet (the local genesis wallet) in this Node process,
 // so every transaction is a real proof verified and included by the local node. Everything
-// else (vault, Midnight.js browser providers, proof server over HTTP, indexer reads) is the
-// production code path. Screenshots land in docs/img/.
+// else (vault, Midnight.js browser providers, indexer reads) is the production code path.
+// By default the double also proves for the page (DApp Connector `getProvingProvider`, backed
+// by the local proof server) and advertises a dead proof-server URL, so every proof must go
+// through the wallet. AGEPASS_UI_PROVING=server tests the local-proof-server path instead.
+// Screenshots land in docs/img/.
 
 import { type ChildProcess, spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -28,12 +31,17 @@ import { ensureDevnet } from '../../cli/src/devnet.js';
 import { log, quietNetworkNoise, reportError } from '../../cli/src/log.js';
 import { openSession, type Session } from '../../cli/src/session.js';
 import { walletProviders } from '../../cli/src/wallet.js';
+import { httpClientProvingProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
+import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
+import { ZK_ASSETS_PATH } from '../../cli/src/config.js';
 
 quietNetworkNoise();
 const IMG = path.join(REPO_ROOT, 'docs', 'img');
 const PORT = 4173;
 const BASE = `http://127.0.0.1:${PORT}/`;
 const PASS = 'Night-Owl-Lantern-42';
+const WALLET_PROVING = process.env.AGEPASS_UI_PROVING !== 'server';
+let walletProofs = 0;
 const failures: string[] = [];
 const check = (ok: boolean, what: string) => {
   if (ok) log.info(`✓ ${what}`);
@@ -113,10 +121,46 @@ async function withLaceDouble(ctx: BrowserContext, session: Session): Promise<vo
     );
     await wp.submitTx(tx);
   });
+  const prover = httpClientProvingProvider(
+    'http://127.0.0.1:6300',
+    new NodeZkConfigProvider(ZK_ASSETS_PATH),
+  );
+  await ctx.exposeBinding(
+    '__laceProve',
+    async (_src, kind: 'check' | 'prove', preimageHex: string, key: string, bind?: string) => {
+      if (kind === 'check') {
+        const r = await prover.check(fromHex(preimageHex), key);
+        return r.map((x) => (x === undefined ? null : x.toString()));
+      }
+      walletProofs++;
+      const out = await prover.prove(
+        fromHex(preimageHex),
+        key,
+        bind === undefined ? undefined : BigInt(bind),
+      );
+      return toHex(out);
+    },
+  );
   // Passed as source text: a serialized TS function would carry transpiler helpers.
-  const e = JSON.stringify({ indexer: cfg.indexer, indexerWS: cfg.indexerWS, node: cfg.node });
+  const e = JSON.stringify({
+    indexer: cfg.indexer,
+    indexerWS: cfg.indexerWS,
+    node: cfg.node,
+    prover: WALLET_PROVING ? 'http://127.0.0.1:6399' : 'http://127.0.0.1:6300',
+    walletProving: WALLET_PROVING,
+  });
   await ctx.addInitScript(`(() => {
     const e = ${e};
+    const hex = (u) => Array.from(u, (b) => b.toString(16).padStart(2, '0')).join('');
+    const bytes = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
+    const proving = {
+      getProvingProvider: async () => ({
+        check: async (pre, key) =>
+          (await window.__laceProve('check', hex(pre), key)).map((x) => (x === null ? undefined : BigInt(x))),
+        prove: async (pre, key, bind) =>
+          bytes(await window.__laceProve('prove', hex(pre), key, bind === undefined ? undefined : bind.toString())),
+      }),
+    };
     window.midnight = {
       laceTestDouble: {
         name: 'Lace (test double)',
@@ -128,7 +172,7 @@ async function withLaceDouble(ctx: BrowserContext, session: Session): Promise<vo
           getConfiguration: async () => ({
             indexerUri: e.indexer,
             indexerWsUri: e.indexerWS,
-            proverServerUri: 'http://127.0.0.1:6300',
+            proverServerUri: e.prover,
             substrateNodeUri: e.node,
             networkId,
           }),
@@ -136,6 +180,7 @@ async function withLaceDouble(ctx: BrowserContext, session: Session): Promise<vo
           getShieldedAddresses: () => window.__laceKeys(),
           balanceUnsealedTransaction: async (tx) => ({ tx: await window.__laceBalance(tx) }),
           submitTransaction: (tx) => window.__laceSubmit(tx),
+          ...(e.walletProving ? proving : {}),
         }),
       },
     };
@@ -378,6 +423,7 @@ async function main() {
     preview?.kill();
     await session.close();
   }
+  if (WALLET_PROVING) check(walletProofs > 0, `all proofs made by the wallet (${walletProofs})`);
   if (failures.length) throw new Error(`${failures.length} UI check(s) failed`);
   log.ok('UI e2e: all checks passed; screenshots in docs/img/');
 }

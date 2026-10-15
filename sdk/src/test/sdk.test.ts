@@ -358,6 +358,19 @@ describe('friendly errors', () => {
     );
     expect(describeError('boom').title).toBe('Something went wrong.');
   });
+
+  it('shows wallet (DApp Connector) errors that have an empty message', () => {
+    const walletError = Object.assign(new Error(''), {
+      type: 'DAppConnectorAPIError',
+      code: 'InternalError',
+      reason: 'Transaction balancing failed',
+    });
+    const f = describeError(walletError);
+    expect(f.detail).toBe('Error [InternalError]: Transaction balancing failed');
+    const declined = Object.assign(new Error(''), { code: 'Rejected', reason: 'User rejected' });
+    expect(describeError(declined).title).toBe('The request was declined in the wallet.');
+    expect(describeError(new Error('')).detail).toBe('Error: (no message)');
+  });
 });
 
 describe('network config', () => {

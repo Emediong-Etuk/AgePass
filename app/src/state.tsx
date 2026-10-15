@@ -51,7 +51,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const connected = useCallback((): ConnectedWallet | undefined => {
     if (wallet.kind !== 'connected') return undefined;
-    return { api: wallet.api, config: wallet.config, proofServer: wallet.proofServer };
+    return {
+      api: wallet.api,
+      config: wallet.config,
+      proofServer: wallet.proofServer,
+      proofServerOk: wallet.proofServerOk,
+      walletProving: wallet.walletProving,
+    };
   }, [wallet]);
 
   const updateVault = useCallback(

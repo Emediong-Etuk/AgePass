@@ -23,6 +23,8 @@ export type WalletStatus =
       dust: bigint;
       proofServer: string;
       proofServerOk: boolean;
+      /** Lace proves for us, so no local proof server is needed. */
+      walletProving: boolean;
     };
 
 export const STATUS_HELP: Record<WalletStatus['kind'], string> = {
@@ -105,5 +107,10 @@ export async function connectLace(networkId: string): Promise<WalletStatus> {
     dust,
     proofServer,
     proofServerOk,
+    walletProving: typeof api.getProvingProvider === 'function',
   };
 }
+
+/** True when transactions can be proved: by the wallet itself or a local proof server. */
+export const canProve = (w: { walletProving: boolean; proofServerOk: boolean }): boolean =>
+  w.walletProving || w.proofServerOk;
