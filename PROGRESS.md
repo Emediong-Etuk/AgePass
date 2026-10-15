@@ -14,7 +14,7 @@ Status legend: ✅ done · 🟡 in progress · ⏸ waiting on Greg · ⬜ not st
 | 5. Web app                    | ✅     | `npm run e2e:ui`: issue and prove from Chromium against a real local node, store unlocks (`docs/evidence/ui-e2e-local.txt`, `docs/img/`) |
 | 6. Preview deployment         | ⏸      | needs Greg's funded Lace wallet / Preview wallet seed (see "Things only Greg does")                                                      |
 | 7. Docs, CI, licensing, pitch | ✅     | README, `docs/*`, `.github/workflows/ci.yml`, `docs/pitch/deck.{md,pdf}`                                                                 |
-| 8. Final verification         | 🟡     | fresh-clone run in `docs/evidence/`                                                                                                      |
+| 8. Final verification         | ✅     | fresh clone from GitHub passes compile, 100 tests, lint, licence, format, build, `e2e:local` (`docs/evidence/fresh-clone.md`); CI green  |
 
 ## Hackathon requirements checklist
 
