@@ -156,8 +156,11 @@ async function newProfile(browser: Browser, session: Session, contract: string):
   return page;
 }
 
-const shot = (page: Page, name: string) =>
-  page.screenshot({ path: path.join(IMG, `${name}.png`), fullPage: true });
+/** Full-page shot for the README, plus a 16:9 viewport crop for the slide deck. */
+const shot = async (page: Page, name: string) => {
+  await page.screenshot({ path: path.join(IMG, `${name}.png`), fullPage: true });
+  await page.screenshot({ path: path.join(IMG, 'deck', `${name}.png`) });
+};
 
 async function createVault(page: Page) {
   await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
@@ -188,7 +191,7 @@ async function holderKey(page: Page): Promise<string> {
 }
 
 async function main() {
-  mkdirSync(IMG, { recursive: true });
+  mkdirSync(path.join(IMG, 'deck'), { recursive: true });
   const config = loadConfig('undeployed');
   await ensureDevnet(config, log);
   const session = await openSession(config, log, {

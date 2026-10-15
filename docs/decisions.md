@@ -15,20 +15,20 @@ runtimes 0.19/0.20 target ledger 9 and cannot deploy there.
 <https://docs.midnight.network/relnotes/support-matrix> as read on 15 Oct 2026
 (identical for Preview, Preprod and Mainnet):
 
-| Component | Pinned | Notes |
-|---|---|---|
-| Node (Midnight) | 1.0.400 | `midnightntwrk/midnight-node:1.0.400` for the local devnet |
-| Compact devtools (`compact`) | 0.5.1 | installed from the `compact-v0.5.1` installer, not `latest` (0.5.3) |
-| Compact toolchain (`compact compile`) | 0.31.1 | `compact compile --language-version` → `0.23.0` |
-| `@midnight-ntwrk/compact-runtime` | 0.16.0 (exact) | |
-| Compact JS / Platform JS / on-chain runtime | 2.5.1 / 2.2.4 / 3.0.0 | pulled transitively by Midnight.js 4.1.1 |
-| Midnight.js (`@midnight-ntwrk/midnight-js-*`) | 4.1.1 | |
-| testkit-js | 4.1.1 | |
-| `@midnight-ntwrk/dapp-connector-api` | 4.0.1 | |
-| `@midnight-ntwrk/wallet-sdk` | 1.2.0 (exact) | |
-| `@midnight-ntwrk/ledger-v8` | 8.1.0 | override, as in the official ZK Loan example |
-| Indexer | 4.3.5 (Preview) | `midnightntwrk/indexer-standalone:4.3.5`, API v4 |
-| Proof server | 8.1.3 | `midnightntwrk/proof-server:8.1.3` |
+| Component                                     | Pinned                | Notes                                                               |
+| --------------------------------------------- | --------------------- | ------------------------------------------------------------------- |
+| Node (Midnight)                               | 1.0.400               | `midnightntwrk/midnight-node:1.0.400` for the local devnet          |
+| Compact devtools (`compact`)                  | 0.5.1                 | installed from the `compact-v0.5.1` installer, not `latest` (0.5.3) |
+| Compact toolchain (`compact compile`)         | 0.31.1                | `compact compile --language-version` → `0.23.0`                     |
+| `@midnight-ntwrk/compact-runtime`             | 0.16.0 (exact)        |                                                                     |
+| Compact JS / Platform JS / on-chain runtime   | 2.5.1 / 2.2.4 / 3.0.0 | pulled transitively by Midnight.js 4.1.1                            |
+| Midnight.js (`@midnight-ntwrk/midnight-js-*`) | 4.1.1                 |                                                                     |
+| testkit-js                                    | 4.1.1                 |                                                                     |
+| `@midnight-ntwrk/dapp-connector-api`          | 4.0.1                 |                                                                     |
+| `@midnight-ntwrk/wallet-sdk`                  | 1.2.0 (exact)         |                                                                     |
+| `@midnight-ntwrk/ledger-v8`                   | 8.1.0                 | override, as in the official ZK Loan example                        |
+| Indexer                                       | 4.3.5 (Preview)       | `midnightntwrk/indexer-standalone:4.3.5`, API v4                    |
+| Proof server                                  | 8.1.3                 | `midnightntwrk/proof-server:8.1.3`                                  |
 
 The dependency set is copied from the current official `midnightntwrk/example-zkloan`
 (`package.json`, Midnight.js 4.1.1), never guessed. All `@midnight-ntwrk/*` versions are
@@ -37,13 +37,13 @@ exact (no `^`).
 **Pragma.** `pragma language_version 0.23;` — accepted by compactc 0.31.1 (verified by
 compiling) and used by the official bulletin-board example.
 
-**Endpoints** (from *Networks and environments*, docs.midnight.network, read 15 Oct 2026):
+**Endpoints** (from _Networks and environments_, docs.midnight.network, read 15 Oct 2026):
 
-| Network | Node RPC | Indexer HTTP | Indexer WS |
-|---|---|---|---|
-| `undeployed` | `http://localhost:9944` | `http://localhost:8088/api/v4/graphql` | `ws://localhost:8088/api/v4/graphql/ws` |
-| `preview` (default public) | `https://rpc.preview.midnight.network` | `https://indexer.preview.midnight.network/api/v4/graphql` | `wss://indexer.preview.midnight.network/api/v4/graphql/ws` |
-| `preprod` | `https://rpc.midnight-preprod.blockfrost.io?project_id=<token>` | `https://midnight-preprod.blockfrost.io/api/v0?project_id=<token>` | `wss://midnight-preprod.blockfrost.io/api/v0/ws?project_id=<token>` |
+| Network                    | Node RPC                                                        | Indexer HTTP                                                       | Indexer WS                                                          |
+| -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `undeployed`               | `http://localhost:9944`                                         | `http://localhost:8088/api/v4/graphql`                             | `ws://localhost:8088/api/v4/graphql/ws`                             |
+| `preview` (default public) | `https://rpc.preview.midnight.network`                          | `https://indexer.preview.midnight.network/api/v4/graphql`          | `wss://indexer.preview.midnight.network/api/v4/graphql/ws`          |
+| `preprod`                  | `https://rpc.midnight-preprod.blockfrost.io?project_id=<token>` | `https://midnight-preprod.blockfrost.io/api/v0?project_id=<token>` | `wss://midnight-preprod.blockfrost.io/api/v0/ws?project_id=<token>` |
 
 The proof server is always local (`http://localhost:6300`). Midnight-hosted Preprod
 endpoints shut down on 9 Oct 2026, so Preprod needs `BLOCKFROST_PROJECT_ID`.
@@ -69,7 +69,7 @@ session; research used the official docs source (`midnightntwrk/midnight-docs`, 
 
 ---
 
-## ADR-001: Issuer computes the commitment *inside* `issueCredential` (Phase 1)
+## ADR-001: Issuer computes the commitment _inside_ `issueCredential` (Phase 1)
 
 **Context.** The reference design had the issuer compute the commitment off-chain and pass
 only the commitment to `issueCredential(commitment)`. Then the circuit cannot check that
@@ -178,3 +178,29 @@ public parameters (`UnknownIssuer`).
 
 **Decision.** `AGEPASS_DEVNET_COMPOSE_OVERRIDE=<file>` adds an extra compose file when the
 demo starts the devnet, e.g. to mount a corporate CA bundle. Not needed on a normal network.
+
+## ADR-010: Web app runtime choices (Phase 5)
+
+**Context.** The browser has no level DB, no Node globals, and Lace cannot be scripted in CI.
+
+**Decision.**
+
+- **Private state** lives in an on-device vault (PBKDF2-SHA256 600k → AES-GCM-256 in
+  `localStorage`), unlocked with a passphrase checked against the Midnight.js policy. During a
+  transaction it is loaded into an in-memory `PrivateStateProvider`, so nothing private is
+  stored unencrypted.
+- **Proof stages** come from wrapping the proof, wallet and submission providers.
+- **Underage/expired** requests are also pre-checked in the wallet for a gentle message before
+  any wallet prompt; the circuit remains the authority.
+- **Build:** `vite-plugin-top-level-await` is not used (its SWC step failed with Vite 6 and
+  ES2022 supports top-level await natively); `isomorphic-ws` is aliased to the native browser
+  `WebSocket` because its browser entry lacks the named export the indexer client imports.
+- **Testing:** `npm run e2e:ui` injects a DApp Connector 4.x **test double** whose
+  `balanceUnsealedTransaction`/`submitTransaction` are served by a real wallet-SDK wallet in
+  Node. Everything else is the production path, and every transaction is a real proof accepted
+  by a real local node.
+- **Hand-off:** the challenge travels in the URL fragment (`#/wallet?request=…`), which
+  browsers never send to servers.
+
+**Consequence.** The UI flow is verified end to end without a human; live Lace on Preview
+remains a manual check (Phase 6).

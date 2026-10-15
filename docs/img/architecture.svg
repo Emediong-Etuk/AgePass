@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="Inter, Helvetica, Arial, sans-serif">
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="Inter, Helvetica, Arial, sans-serif">
   <!-- SPDX-License-Identifier: Apache-2.0 -->
   <title>AgePass architecture</title>
   <defs>
@@ -50,14 +50,14 @@
   <text x="505" y="216" class="t">admin · sealed</text><text x="505" y="238" class="s">hash of deployer secret</text>
   <rect x="490" y="262" width="360" height="60" rx="10" fill="#0b1530" stroke="#2a3d74"/>
   <text x="505" y="288" class="t">issuers · Set</text><text x="505" y="310" class="s">approved issuer keys</text>
-  <rect x="490" y="334" width="360" height="72" rx="10" fill="#0b1530" stroke="#34e0a1"/>
+  <rect x="490" y="334" width="360" height="80" rx="10" fill="#0b1530" stroke="#34e0a1"/>
   <text x="505" y="360" class="t">credentials · HistoricMerkleTree&lt;16&gt;</text>
   <text x="505" y="382" class="s">leaf hashes only · proofs hide which leaf</text>
-  <text x="505" y="399" class="s">credentialCount</text>
-  <rect x="490" y="418" width="360" height="92" rx="10" fill="#0b1530" stroke="#34e0a1"/>
-  <text x="505" y="444" class="t">verifications · Map&lt;challengeId, record&gt;</text>
-  <text x="505" y="466" class="s">siteId · nym · cutoffDate · checkedOn</text>
-  <text x="505" y="488" class="s">verificationCount</text>
+  <text x="505" y="402" class="s">credentialCount</text>
+  <rect x="490" y="426" width="360" height="92" rx="10" fill="#0b1530" stroke="#34e0a1"/>
+  <text x="505" y="452" class="t">verifications · Map&lt;challengeId, record&gt;</text>
+  <text x="505" y="474" class="s">siteId · nym · cutoffDate · checkedOn</text>
+  <text x="505" y="496" class="s">verificationCount</text>
   <text x="490" y="540" class="s">circuits: addIssuer · removeIssuer ·</text>
   <text x="490" y="560" class="s">issueCredential · proveAge</text>
   <text x="490" y="580" class="s">pure: 6 hash circuits reused by TypeScript</text>
@@ -78,12 +78,12 @@
 
   <!-- arrows -->
   <path d="M400 525 H440 V370 H486" class="l" marker-end="url(#a)"/>
-  <text x="408" y="515" class="k">commit</text>
-  <path d="M380 357 H440 V464 H486" class="d" marker-end="url(#a)"/>
-  <text x="402" y="455" class="k">proof</text>
-  <path d="M940 175 H900 V60 H220 V150" class="l" marker-end="url(#a)"/>
-  <text x="560" y="52" class="k">challenge (URL fragment, never sent to a server)</text>
-  <path d="M870 464 H905 V405 H936" class="l" marker-end="url(#a)"/>
+  <text x="403" y="545" class="k" font-size="12">commit</text>
+  <path d="M380 357 H460 V472 H486" class="d" marker-end="url(#a)"/>
+  <text x="410" y="349" class="k" font-size="12">proof</text>
+  <path d="M940 175 H905 V94 H380 V150" class="l" marker-end="url(#a)"/>
+  <text x="480" y="88" class="k">challenge (URL fragment, never sent to a server)</text>
+  <path d="M870 472 H905 V405 H936" class="l" marker-end="url(#a)"/>
   <path d="M1050 350 V314" class="l" marker-end="url(#a)"/>
   <path d="M220 225 V236" class="l"/>
 </svg>
