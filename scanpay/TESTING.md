@@ -1,0 +1,194 @@
+# How to test ScanPay
+
+Follow these steps in order. Each test says what to paste and what you should see.
+The whole run takes about 20 minutes.
+
+## What you need
+
+- **Wallet A** is the payer: a Solana wallet in PayBox with at least **1.1 USDC** and about **0.01 SOL**.
+- **Wallet B** is "Mama's Kitchen", the one getting paid. Have its Solana address ready.
+- **Optional:** a Base wallet in PayBox with **0.01 USDC** and a little **ETH**.
+- **Your phone**, to show the QR code.
+- **An AI agent** connected to your PayBox account, for Part 2.
+
+In the inputs below, replace these placeholders with your own addresses:
+
+- `<WALLET_A>` is Wallet A's Solana address.
+- `<WALLET_B>` is Wallet B's Solana address.
+- `<BASE_WALLET>` is your Base address (starts with 0x).
+
+---
+
+## Part 1: Test in the developer portal (no money moves)
+
+Open your project, go to **Test**, then select **Load tools**. You should see 4 tools:
+`read_payment_request`, `pay_solana_request`, `pay_base_request` and `create_payment_request`.
+
+### Test 1: Read a payment link
+
+Tool: `read_payment_request`
+
+```json
+{"link":"solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU?amount=2&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&reference=EgsmLTxqxx6B6CyfEzrxSZgG7rZADX3fcyFcxAexkF3k&label=Mama%27s%20Kitchen&message=Thanks%20for%20your%20order&memo=order-1042"}
+```
+
+✅ **You should see:**
+- `"summary": "Pay 2 USDC to Mama's Kitchen (7xKX…gAsU) on Solana, memo: order-1042, …"`
+- `"amount": "2"`, `"token": "USDC"`, `"network": "solana"`, `"nextTool": "pay_solana_request"`
+- A warning that the name "Mama's Kitchen" isn't verified.
+
+### Test 2: Make a payment request
+
+Tool: `create_payment_request`
+
+```json
+{"network":"solana","recipient":"<WALLET_B>","amount":"1","label":"Mama's Kitchen","memo":"order-1042"}
+```
+
+✅ **You should see:**
+- A `"link"` that starts with `solana:<WALLET_B>?amount=1&spl-token=EPjF…`
+- `"qrCode": "included"`. The portal may show the QR as data rather than a picture. That's fine.
+
+**Copy the link.** You'll use it in Test 4.
+
+### Test 3: Safety checks
+
+Run each of these. Every one should fail with a clear message, and that's the correct result.
+
+**3a. No network given.** Tool: `read_payment_request`
+
+```json
+{"link":"ethereum:0x70997970C51812dc3A010C7d01b50e0d17dc79C8?value=1e16"}
+```
+
+✅ You should see: *"…doesn't say which network it's for, and ScanPay won't guess…"*
+
+**3b. Wrong network.** Tool: `read_payment_request`
+
+```json
+{"link":"ethereum:0x70997970C51812dc3A010C7d01b50e0d17dc79C8@1?value=1e16"}
+```
+
+✅ You should see: *"This request is for Ethereum mainnet (chain ID 1), but ScanPay only pays on Base…"*
+
+**3c. Website payment link.** Tool: `read_payment_request`
+
+```json
+{"link":"solana:https%3A%2F%2Fpay.example.com%2Fcheckout"}
+```
+
+✅ You should see: *"Transaction request links aren't supported yet…"*
+
+**3d. Over your limit.** Tool: `pay_solana_request`
+
+```json
+{"link":"solana:<WALLET_B>?amount=1&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","sender":"<WALLET_A>","maxAmount":"0.5"}
+```
+
+✅ You should see: *"Refused: this request is for 1 USDC, which is more than your limit of 0.5 USDC…"*
+
+**3e. No amount given.** Tool: `pay_solana_request`
+
+```json
+{"link":"solana:<WALLET_B>?spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","sender":"<WALLET_A>"}
+```
+
+✅ You should see: *"This link doesn't include an amount, and ScanPay never guesses one…"*
+
+### Test 4: Build a Solana payment, then validate it
+
+Tool: `pay_solana_request`. Paste the link from Test 2:
+
+```json
+{"link":"<LINK_FROM_TEST_2>","sender":"<WALLET_A>","maxAmount":"5"}
+```
+
+✅ **You should see:**
+- Text: *"Proposed: pay 1 USDC to Mama's Kitchen (…) on Solana, memo: order-1042. … Approve in PayBox to send."*
+- `io.paybox/transactionProposal` with `"kind": "solana"` and `"chain": "solana:mainnet"`
+
+Now select **Validate transaction**, pick **Wallet A** and run it.
+
+✅ **You should see:** the simulation passes and shows a preview. Nothing is signed or sent.
+
+> You must validate within **5 minutes** of running the tool, and each result can be validated **once**.
+> If it expired, run the tool again.
+> The wallet you pick must be the same wallet as `sender`.
+
+### Test 5 (optional): Build a Base payment, then validate it
+
+Tool: `pay_base_request`. This pays 0.01 USDC.
+
+```json
+{"link":"ethereum:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913@8453/transfer?address=<BASE_WALLET>&uint256=10000","maxAmount":"1"}
+```
+
+✅ **You should see:**
+- `"kind": "evm"` and `"chain": "eip155:8453"`
+- `"to"` is the USDC contract (`0x8335…2913`) and `"value": "0"`
+
+Select **Validate transaction** and pick your Base wallet. The simulation should pass.
+
+**After Part 1 passes, submit your project:** accept the terms, then select **Submit Project**.
+Do this **before 8pm New York time**. The agent test in Part 2 only works after you submit.
+
+---
+
+## Part 2: Test with your agent (a real payment of 1 USDC)
+
+This is the same flow as the demo video, so you can record it.
+
+1. **Turn it on.** In PayBox, open **Unofficial plugins** and enable ScanPay.
+2. **Check the agent sees it.** Ask your agent: *"What tools does the ScanPay plugin have?"*
+   ✅ It should list the 4 tools.
+3. **Make the request as Mama's Kitchen.** Tell the agent:
+   *"Use ScanPay to make a payment request for 1 USDC on Solana to `<WALLET_B>`, label Mama's Kitchen, memo order-1042. Show me the QR."*
+   ✅ You get a link and a QR code.
+4. **Show the QR on your phone.**
+5. **Pay as the customer.** Paste the link, or a photo of the QR, and say:
+   *"Pay this with ScanPay from my wallet `<WALLET_A>`."*
+   ✅ The agent tells you in plain English: 1 USDC to Mama's Kitchen, on Solana, memo order-1042.
+   Then it proposes the payment.
+6. **Approve.** PayBox opens the payment window. Check the details and approve with your **passkey**.
+7. **Wait for the result.** The agent follows the request until it says **success**.
+8. **Check the payment arrived.** Open `https://solscan.io/account/<WALLET_B>#transfers`.
+   ✅ You should see **+1 USDC**. Open the transaction to see the memo **order-1042**.
+
+**Bonus test:** ask *"Make me a payment request on Solana to `<WALLET_B>`"* with no amount. Then ask the agent to pay it.
+✅ The agent should ask you how much to pay instead of guessing.
+
+---
+
+## Part 3 (optional): Run the tests on a computer
+
+You need Node.js 24 and pnpm 11.11.0.
+
+```bash
+cd scanpay
+pnpm install --frozen-lockfile
+pnpm test    # PayBox checks. The last line should say "status":"passed"
+pnpm unit    # 52 ScanPay tests. You should see "pass 52" and "fail 0"
+```
+
+---
+
+## If something goes wrong
+
+| Problem | Fix |
+|---|---|
+| "Load tools" shows nothing | Wait 30 seconds, then select **Run checks again**. After that, select **Load tools** again. |
+| Validation fails with not enough funds | Wallet A needs USDC, plus about 0.01 SOL for fees and for opening Mama's Kitchen's USDC account (about 0.002 SOL). |
+| Validation says the sender doesn't match | The wallet you pick must be the same address as `sender`. |
+| The proposal expired | Each proposal lasts 4 minutes. Run the tool again for a fresh one. |
+| The agent can't find ScanPay | Make sure you submitted the project and enabled it under **Unofficial plugins**. |
+| The agent asks for an amount | The link has no amount. Tell it how much. ScanPay never guesses amounts. |
+
+## Checklist
+
+- [ ] Test 1: the payment link reads correctly
+- [ ] Test 2: a payment link is made
+- [ ] Test 3: all 5 safety checks refuse with clear messages
+- [ ] Test 4: the Solana payment builds and validates
+- [ ] Test 5 (optional): the Base payment builds and validates
+- [ ] Project submitted before 8pm New York time
+- [ ] Part 2: 1 USDC arrives in Wallet B with memo order-1042
