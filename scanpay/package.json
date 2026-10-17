@@ -1,0 +1,35 @@
+{
+  "name": "scanpay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "11.11.0"
+  },
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "dev": "tsx src/plugin.ts",
+    "build": "esbuild src/plugin.ts --bundle --platform=node --format=esm --target=node24 --minify --outfile=dist/plugin.mjs --alias:node-fetch=./shims/no-fetch.cjs \"--banner:js=import { createRequire as __scanpayRequire } from 'node:module'; const require = __scanpayRequire(import.meta.url);\"",
+    "conformance": "node scripts/conformance.mjs",
+    "test": "node scripts/test.mjs",
+    "typecheck": "tsc --noEmit",
+    "unit": "pnpm run build && tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "@solana/web3.js": "1.98.4",
+    "qrcode": "1.5.4",
+    "viem": "2.51.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "0.4.14",
+    "@types/node": "24.12.2",
+    "@types/qrcode": "1.5.5",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

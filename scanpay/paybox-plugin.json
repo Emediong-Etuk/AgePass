@@ -1,0 +1,6 @@
+{
+  "tool": "read_payment_request",
+  "arguments": {
+    "link": "solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU?amount=2&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&reference=EgsmLTxqxx6B6CyfEzrxSZgG7rZADX3fcyFcxAexkF3k&label=Mama%27s%20Kitchen&message=Thanks%20for%20your%20order&memo=order-1042"
+  }
+}

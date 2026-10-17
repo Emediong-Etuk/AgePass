@@ -14,6 +14,8 @@ export default tseslint.config(
       'contract/src/managed/**',
       'app/public/**',
       'app/dist-e2e/**',
+      // Separate PayBox plugin project with its own pinned toolchain and checks.
+      'scanpay/**',
     ],
   },
   js.configs.recommended,

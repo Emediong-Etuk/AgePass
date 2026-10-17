@@ -8,7 +8,13 @@ import { readFileSync } from 'node:fs';
 const SOURCE = /\.(compact|ts|tsx|js|mjs|cjs|sh)$/;
 const HEADER = 'SPDX-License-Identifier: Apache-2.0';
 // Generated or third-party files that we do not author.
-const SKIP = [/^contract\/src\/managed\//, /(^|\/)dist\//, /\.d\.ts$/, /^app\/public\//];
+const SKIP = [
+  /^scanpay\//,
+  /^contract\/src\/managed\//,
+  /(^|\/)dist\//,
+  /\.d\.ts$/,
+  /^app\/public\//,
+];
 
 // Use git so ignored files (node_modules, build output) are never checked.
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
